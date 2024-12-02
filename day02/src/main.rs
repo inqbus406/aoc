@@ -60,12 +60,12 @@ fn check_report_part2(report: &[i32]) -> bool {
         return true;
     }
 
-    for (i, num) in report.iter().enumerate() {
+    for (i, &num) in report.iter().enumerate() {
         report_vec.remove(i);
         if check_report(&report_vec) {
             return true;
         } else {
-            report_vec.insert(i, *num);
+            report_vec.insert(i, num);
         }
     }
 
