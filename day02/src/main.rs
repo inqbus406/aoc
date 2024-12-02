@@ -37,14 +37,14 @@ fn parse_reports(fname: &str) -> std::io::Result<Vec<Vec<i32>>> {
 fn check_report(report: &[i32]) -> bool {
     let increasing = report[1] > report[0];
 
-    for (i, num) in report.iter().enumerate().skip(1) {
+    for nums in report.windows(2).collect::<Vec<&[i32]>>() {
         if increasing {
-            match num - report[i - 1] {
+            match nums[1] - nums[0] {
                 1..=3 => continue,
                 _ => return false,
             }
         } else {
-            match num - report[i - 1] {
+            match nums[1] - nums[0] {
                 -3..=-1 => continue,
                 _ => return false,
             }
