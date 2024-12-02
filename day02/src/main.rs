@@ -38,16 +38,10 @@ fn check_report(report: &[i32]) -> bool {
     let increasing = report[1] > report[0];
 
     for nums in report.windows(2).collect::<Vec<&[i32]>>() {
-        if increasing {
-            match nums[1] - nums[0] {
-                1..=3 => continue,
-                _ => return false,
-            }
-        } else {
-            match nums[1] - nums[0] {
-                -3..=-1 => continue,
-                _ => return false,
-            }
+        match (increasing, nums[1] - nums[0]) {
+            (true, 1..=3) => continue,
+            (false, -3..=-1) => continue,
+            _ => return false,
         }
     }
 
