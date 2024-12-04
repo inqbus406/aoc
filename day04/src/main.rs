@@ -13,7 +13,6 @@ fn main() -> std::io::Result<()> {
 fn parse_xword(file_name: &str) -> std::io::Result<Vec<Vec<char>>> {
     let f = File::open(file_name)?;
     let reader = BufReader::new(f);
-
     let lines = reader.lines();
 
     let mut xword = Vec::new();
@@ -55,10 +54,8 @@ fn part2(xword: &Vec<Vec<char>>) -> usize {
     let mut result = 0;
     for i in 1..(xword[0].len() - 1) {
         for j in 1..(xword.len() - 1) {
-            if xword[j][i] == 'A' {
-                if check_for_x(i, j, &xword) {
-                    result += 1;
-                }
+            if xword[j][i] == 'A' && check_for_x(i, j, &xword) {
+                result += 1;
             }
         }
     }
@@ -73,26 +70,14 @@ fn check_for_x(x: usize, y: usize, xword: &Vec<Vec<char>>) -> bool {
     if y == 0 || y == xword.len() - 1 {
         return false;
     }
-    match xword[y - 1][x - 1] {
-        'M' => match xword[y + 1][x + 1] {
-            'S' => {},
-            _ => return false,
-        }
-        'S' => match xword[y + 1][x + 1] {
-            'M' => {},
-            _ => return false,
-        }
+    match (xword[y - 1][x - 1], xword[y + 1][x + 1]) {
+        ('M', 'S') => {},
+        ('S', 'M') => {},
         _ => return false,
     }
-    match xword[y + 1][x - 1] {
-        'M' => match xword[y - 1][x + 1] {
-            'S' => {},
-            _ => return false,
-        }
-        'S' => match xword[y - 1][x + 1] {
-            'M' => {},
-            _ => return false,
-        }
+    match (xword[y + 1][x - 1], xword[y - 1][x + 1]) {
+        ('M', 'S') => {},
+        ('S', 'M') => {},
         _ => return false,
     }
 
@@ -100,11 +85,10 @@ fn check_for_x(x: usize, y: usize, xword: &Vec<Vec<char>>) -> bool {
 }
 
 fn vertical_string(x: usize, xword: &Vec<Vec<char>>) -> String {
-    let mut result = String::new();
-    for word in xword {
-        result.push(word[x]);
-    }
-    result
+    xword.iter().fold(String::new(), |mut acc, line| {
+        acc.push(line[x]);
+        acc
+    })
 }
 
 fn diag_string(x: usize, y: usize, descend: bool, xword: &Vec<Vec<char>>) -> String {
@@ -122,10 +106,7 @@ fn diag_string(x: usize, y: usize, descend: bool, xword: &Vec<Vec<char>>) -> Str
 }
 
 fn count_xmas(word: &str) -> usize {
-    let mut result = word.match_indices("XMAS").count();
-    result += word.match_indices("SAMX").count();
-
-    result
+    word.match_indices("XMAS").count() + word.match_indices("SAMX").count()
 }
 
 #[cfg(test)]
