@@ -2,7 +2,16 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("input/day04.txt")?;
+    let xword = parse_xword("input/day04.txt")?;
+
+    println!("Part1: {}", part1(&xword));
+    println!("Part2: {}", part2(&xword));
+
+    Ok(())
+}
+
+fn parse_xword(file_name: &str) -> std::io::Result<Vec<Vec<char>>> {
+    let f = File::open(file_name)?;
     let reader = BufReader::new(f);
 
     let lines = reader.lines();
@@ -21,13 +30,10 @@ fn main() -> std::io::Result<()> {
         xword.push(v);
     }
 
-    part1(&xword);
-    part2(&xword);
-
-    Ok(())
+    Ok(xword)
 }
 
-fn part1(xword: &Vec<Vec<char>>) {
+fn part1(xword: &Vec<Vec<char>>) -> usize {
     let mut result = 0;
     for (i, line) in xword.iter().enumerate() {
         result += count_xmas(&String::from_iter(line.clone().into_iter()));
@@ -42,10 +48,10 @@ fn part1(xword: &Vec<Vec<char>>) {
         result += count_xmas(&vertical_string(i, &xword));
     }
 
-    println!("Part1: {}", result);
+    result
 }
 
-fn part2(xword: &Vec<Vec<char>>) {
+fn part2(xword: &Vec<Vec<char>>) -> usize {
     let mut result = 0;
     for i in 1..(xword[0].len() - 1) {
         for j in 1..(xword.len() - 1) {
@@ -56,7 +62,8 @@ fn part2(xword: &Vec<Vec<char>>) {
             }
         }
     }
-    println!("Part2: {}", result);
+
+    result
 }
 
 fn check_for_x(x: usize, y: usize, xword: &Vec<Vec<char>>) -> bool {
@@ -119,4 +126,27 @@ fn count_xmas(word: &str) -> usize {
     result += word.match_indices("SAMX").count();
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() -> std::io::Result<()> {
+        let xword = parse_xword("../input/day04test.txt")?;
+        let part1 = part1(&xword);
+        assert_eq!(part1, 18);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        let xword = parse_xword("../input/day04test.txt")?;
+        let part2 = part2(&xword);
+        assert_eq!(part2, 9);
+
+        Ok(())
+    }
 }
