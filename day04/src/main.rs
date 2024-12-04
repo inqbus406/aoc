@@ -9,7 +9,6 @@ fn main() -> std::io::Result<()> {
     let lines = reader.lines();
 
     let mut xword = Vec::new();
-    let mut result = 0;
 
     for line in lines {
         let Ok(line) = line else {
@@ -23,6 +22,14 @@ fn main() -> std::io::Result<()> {
         xword.push(v);
     }
 
+    part1(&xword);
+    part2(&xword);
+
+    Ok(())
+}
+
+fn part1(xword: &Vec<Vec<char>>) {
+    let mut result = 0;
     for (i, line) in xword.iter().enumerate() {
         result += count_xmas(&String::from_iter(line.clone().into_iter()));
         result += count_xmas(&diag_string(0, i, true, &xword));
@@ -37,10 +44,6 @@ fn main() -> std::io::Result<()> {
     }
 
     println!("Part1: {}", result);
-    part2(&xword);
-    // dbg!(diag_string(0, 8, false, &xword));
-
-    Ok(())
 }
 
 fn part2(xword: &Vec<Vec<char>>) {
@@ -49,7 +52,6 @@ fn part2(xword: &Vec<Vec<char>>) {
         for j in 1..(xword.len() - 1) {
             if xword[j][i] == 'A' {
                 if check_for_x(i, j, &xword) {
-                    // println!("Found: ({i}, {j})");
                     result += 1;
                 }
             }
