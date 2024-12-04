@@ -36,10 +36,59 @@ fn main() -> std::io::Result<()> {
         result += count_xmas(&vertical_string(i, &xword));
     }
 
-    println!("Count: {}", result);
+    println!("Part1: {}", result);
+    part2(&xword);
     // dbg!(diag_string(0, 8, false, &xword));
 
     Ok(())
+}
+
+fn part2(xword: &Vec<Vec<char>>) {
+    let mut result = 0;
+    for i in 1..(xword[0].len() - 1) {
+        for j in 1..(xword.len() - 1) {
+            if xword[j][i] == 'A' {
+                if check_for_x(i, j, &xword) {
+                    // println!("Found: ({i}, {j})");
+                    result += 1;
+                }
+            }
+        }
+    }
+    println!("Part2: {}", result);
+}
+
+fn check_for_x(x: usize, y: usize, xword: &Vec<Vec<char>>) -> bool {
+    if x == 0 || x == xword[0].len() - 1 {
+        return false;
+    }
+    if y == 0 || y == xword.len() - 1 {
+        return false;
+    }
+    match xword[y - 1][x - 1] {
+        'M' => match xword[y + 1][x + 1] {
+            'S' => {},
+            _ => return false,
+        }
+        'S' => match xword[y + 1][x + 1] {
+            'M' => {},
+            _ => return false,
+        }
+        _ => return false,
+    }
+    match xword[y + 1][x - 1] {
+        'M' => match xword[y - 1][x + 1] {
+            'S' => {},
+            _ => return false,
+        }
+        'S' => match xword[y - 1][x + 1] {
+            'M' => {},
+            _ => return false,
+        }
+        _ => return false,
+    }
+
+    true
 }
 
 fn vertical_string(x: usize, xword: &Vec<Vec<char>>) -> String {
@@ -55,24 +104,18 @@ fn diag_string(x: usize, y: usize, descend: bool, xword: &Vec<Vec<char>>) -> Str
     if descend {
         for (i, j) in (x..xword[0].len()).zip(y..xword.len()) {
             result.push(xword[j][i]);
-            // println!("{}, {}", i, j);
         }
     } else {
         for (i, j) in (x..xword[0].len()).zip((0..=y).rev()) {
             result.push(xword[j][i]);
-            // println!("{}, {}", i, j);
         }
     }
     result
 }
 
 fn count_xmas(word: &str) -> usize {
-    // println!("checking: {}", word);
-    // let re = Regex::new(r"XMAS|SAMX").unwrap();
-    // let result = re.captures_iter(word).count();
     let mut result = word.match_indices("XMAS").count();
     result += word.match_indices("SAMX").count();
-    // println!("Contains: {}", result);
 
     result
 }
