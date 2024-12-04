@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use regex::Regex;
 
 fn main() -> std::io::Result<()> {
     let f = File::open("input/day04.txt")?;
