@@ -4,7 +4,18 @@ use std::io::{BufRead, BufReader};
 use itertools::Itertools;
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("input/day05.txt")?;
+    let (rules, pages) = parse_input("input/day05.txt")?;
+
+    let part1 = part1(&pages, &rules);
+    let part2 = part2(&pages, &rules);
+    println!("Part 1: {}", part1);
+    println!("Part 2: {}", part2);
+
+    Ok(())
+}
+
+fn parse_input(file_name: &str) -> std::io::Result<(HashSet<(usize, usize)>, Vec<Vec<usize>>)> {
+    let f = File::open(file_name)?;
     let mut reader = BufReader::new(f);
 
     let mut rules: HashSet<(usize, usize)> = HashSet::new();
@@ -30,19 +41,16 @@ fn main() -> std::io::Result<()> {
         buffer.clear();
     }
 
-    // dbg!(&rules);
-    let part1: usize = pages.iter().filter(|p| is_valid(&p, &rules))
-        .map(|p| p[p.len() / 2]).sum();
-    println!("Part 1: {}", part1);
-    // for p in pages {
-    //     if is_valid(&p, &rules) {
-    //         dbg!(&p);
-    //     } else {
-    //         println!("Not valid");
-    //     }
-    // }
+    Ok((rules, pages))
+}
 
-    let part2_pages: Vec<Vec<usize>> = pages.into_iter().filter(|p| !is_valid(&p, &rules)).collect();
+fn part1(pages: &Vec<Vec<usize>>, rules: &HashSet<(usize, usize)>) -> usize {
+    pages.iter().filter(|p| is_valid(&p, &rules))
+        .map(|p| p[p.len() / 2]).sum()
+}
+
+fn part2(pages: &Vec<Vec<usize>>, rules: &HashSet<(usize, usize)>) -> usize {
+    let part2_pages: Vec<Vec<usize>> = pages.clone().into_iter().filter(|p| !is_valid(p, &rules)).collect();
     let mut fixed_pages = Vec::new();
     for p in part2_pages {
         let mut fixed = p.clone();
@@ -51,11 +59,8 @@ fn main() -> std::io::Result<()> {
         }
         fixed_pages.push(fixed);
     }
-    // dbg!(&fixed_pages);
-    let part2: usize = fixed_pages.iter().map(|p| p[p.len() / 2]).sum();
-    println!("Part 2: {}", part2);
 
-    Ok(())
+    fixed_pages.iter().map(|p| p[p.len() / 2]).sum()
 }
 
 fn fix_pages(pages: &mut Vec<usize>, rules: &HashSet<(usize, usize)>) {
@@ -70,20 +75,33 @@ fn fix_pages(pages: &mut Vec<usize>, rules: &HashSet<(usize, usize)>) {
 }
 
 fn is_valid(pages: &[usize], rules: &HashSet<(usize, usize)>) -> bool {
-
-    // dbg!(&pages);
     let mut combinations = HashSet::new();
     for combination in pages.iter().combinations(2) {
         combinations.insert(combination);
     }
-    // dbg!(&rules);
-    // for perm in &combinations {
-    //     if rules.contains(&(*perm[1], *perm[0])) {
-    //         println!("{:?} against the rules", perm);
-    //     }
-    // }
-
-    // dbg!(&combinations);
 
     combinations.iter().all(|comb| !rules.contains(&(*comb[1], *comb[0])))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() -> std::io::Result<()> {
+        let (rules, pages) = parse_input("../test_input/day05test.txt")?;
+        let part1 = part1(&pages, &rules);
+        assert_eq!(part1, 143);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        let (rules, pages) = parse_input("../test_input/day05test.txt")?;
+        let part2 = part2(&pages, &rules);
+        assert_eq!(part2, 123);
+
+        Ok(())
+    }
 }
