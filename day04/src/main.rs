@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_part1() -> std::io::Result<()> {
-        let xword = parse_xword("../input/day04test.txt")?;
+        let xword = parse_xword("../test_input/day04test.txt")?;
         let part1 = part1(&xword);
         assert_eq!(part1, 18);
 
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_part2() -> std::io::Result<()> {
-        let xword = parse_xword("../input/day04test.txt")?;
+        let xword = parse_xword("../test_input/day04test.txt")?;
         let part2 = part2(&xword);
         assert_eq!(part2, 9);
 

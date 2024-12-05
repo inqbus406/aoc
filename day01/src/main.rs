@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     fn test_part1() -> std::io::Result<()> {
-        let (mut left_list, mut right_list) = parse_lists_from_file("../input/day01test.txt")?;
+        let (mut left_list, mut right_list) = parse_lists_from_file("../test_input/day01test.txt")?;
         left_list.sort();
         right_list.sort();
         assert_eq!(part1(&left_list, &right_list), 11);
@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn test_part2() -> std::io::Result<()> {
-        let (left_list, right_list) = parse_lists_from_file("../input/day01test.txt")?;
+        let (left_list, right_list) = parse_lists_from_file("../test_input/day01test.txt")?;
         assert_eq!(part2(&left_list, &right_list), 31);
 
         Ok(())

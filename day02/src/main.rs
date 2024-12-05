@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_part1() -> std::io::Result<()> {
-        let reports = parse_reports("../input/day02test.txt")?;
+        let reports = parse_reports("../test_input/day02test.txt")?;
         let part1 = reports.iter().filter(|&report| check_report(report)).count();
         assert_eq!(part1, 2);
 
@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn test_part2() -> std::io::Result<()> {
-        let reports = parse_reports("../input/day02test.txt")?;
+        let reports = parse_reports("../test_input/day02test.txt")?;
         let part2 = reports.iter().filter(|&report| check_report_part2(report)).count();
         assert_eq!(part2, 4);
 
