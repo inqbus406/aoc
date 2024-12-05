@@ -3,6 +3,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use itertools::Itertools;
 
+type Rules = HashSet<(usize, usize)>;
+type Pages = Vec<Vec<usize>>;
+
 fn main() -> std::io::Result<()> {
     let (rules, pages) = parse_input("input/day05.txt")?;
 
@@ -14,42 +17,41 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn parse_input(file_name: &str) -> std::io::Result<(HashSet<(usize, usize)>, Vec<Vec<usize>>)> {
+fn parse_input(file_name: &str) -> std::io::Result<(Rules, Pages)> {
     let f = File::open(file_name)?;
     let mut reader = BufReader::new(f);
 
-    let mut rules: HashSet<(usize, usize)> = HashSet::new();
-    let mut pages: Vec<Vec<usize>> = Vec::new();
+    let mut rules: Rules = HashSet::new();
+    let mut pages: Pages = Vec::new();
 
     let mut buffer = String::new();
     while let Ok(_) = reader.read_line(&mut buffer) {
-        if buffer.trim().is_empty() {
+        let line = buffer.trim();
+        if line.is_empty() {
             break;
         }
-        rules.insert(buffer.split('|').filter(|s| !s.trim().is_empty()).map(|s| {
-            let s = s.trim();
-            s.parse().unwrap()
-        }).collect_tuple().unwrap());
+        rules.insert(line.split('|').map(|s| s.parse().unwrap()).collect_tuple().unwrap());
         buffer.clear();
     }
 
     while let Ok(_) = reader.read_line(&mut buffer) {
-        if buffer.trim().is_empty() {
+        let line = buffer.trim();
+        if line.is_empty() {
             break;
         }
-        pages.push(buffer.trim().split(',').map(|s| s.parse().unwrap()).collect());
+        pages.push(line.split(',').map(|s| s.parse().unwrap()).collect());
         buffer.clear();
     }
 
     Ok((rules, pages))
 }
 
-fn part1(pages: &Vec<Vec<usize>>, rules: &HashSet<(usize, usize)>) -> usize {
+fn part1(pages: &Pages, rules: &Rules) -> usize {
     pages.iter().filter(|p| is_valid(&p, &rules))
         .map(|p| p[p.len() / 2]).sum()
 }
 
-fn part2(pages: &Vec<Vec<usize>>, rules: &HashSet<(usize, usize)>) -> usize {
+fn part2(pages: &Pages, rules: &Rules) -> usize {
     let part2_pages: Vec<Vec<usize>> = pages.clone().into_iter().filter(|p| !is_valid(p, &rules)).collect();
     let mut fixed_pages = Vec::new();
     for p in part2_pages {
@@ -63,7 +65,7 @@ fn part2(pages: &Vec<Vec<usize>>, rules: &HashSet<(usize, usize)>) -> usize {
     fixed_pages.iter().map(|p| p[p.len() / 2]).sum()
 }
 
-fn fix_pages(pages: &mut Vec<usize>, rules: &HashSet<(usize, usize)>) {
+fn fix_pages(pages: &mut Vec<usize>, rules: &Rules) {
     for combination in pages.clone().iter().combinations(2) {
         if rules.contains(&(*combination[1], *combination[0])) {
             // Need to swap these
@@ -74,7 +76,7 @@ fn fix_pages(pages: &mut Vec<usize>, rules: &HashSet<(usize, usize)>) {
     }
 }
 
-fn is_valid(pages: &[usize], rules: &HashSet<(usize, usize)>) -> bool {
+fn is_valid(pages: &[usize], rules: &Rules) -> bool {
     let mut combinations = HashSet::new();
     for combination in pages.iter().combinations(2) {
         combinations.insert(combination);
