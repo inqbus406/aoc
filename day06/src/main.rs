@@ -50,10 +50,10 @@ enum Direction {
 impl Direction {
     fn turn_right(&mut self) {
         match &self {
-            Direction::North => *self = Direction::East,
-            Direction::East => *self = Direction::South,
-            Direction::South => *self = Direction::West,
-            Direction::West => *self = Direction::North,
+            Direction::North => *self = Self::East,
+            Direction::East => *self = Self::South,
+            Direction::South => *self = Self::West,
+            Direction::West => *self = Self::North,
         }
     }
 }
@@ -145,14 +145,13 @@ impl Map {
             }
             last_visited = self.visited.len();
         }
-        // dbg!(&map);
 
         false
     }
 }
 
 #[cfg(test)]
-mod tests {
+mod day06_tests {
     use super::*;
 
     #[test]
