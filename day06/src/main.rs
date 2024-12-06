@@ -6,40 +6,21 @@ use std::io::{BufRead, BufReader};
 type Position = (i32, i32);
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("input/day06.txt")?;
-    let reader = BufReader::new(f);
-    let lines = reader.lines();
-
-    let mut obstacles: HashSet<Position> = HashSet::new();
-    let mut guard_position: Position = (0, 0);
-    let mut x_size = 0;
-    let mut y_size = 0;
-
-    for (y, line) in lines.enumerate() {
-        let Ok(line) = line else {
-            continue;
-        };
-        if line.is_empty() {
-            continue;
-        }
-        for (x, c) in line.chars().enumerate() {
-            x_size = max(x_size, x);
-            match c {
-                '#' => _ = obstacles.insert((x as i32, y as i32)),
-                '^' => guard_position = (x as i32, y as i32),
-                _ => continue,
-            }
-        }
-        y_size = max(y_size, y);
-    }
-    let mut map = Map::new(x_size + 1, y_size + 1, guard_position, &obstacles);
+    let mut map = Map::from_file("day06/input.txt")?;
+    let initial_guard_pos = map.guard_pos;
 
     while map.move_guard() {};
 
-    println!("Part1: {}", map.visited.len());
-    println!("Part2: {}", part2(&map, guard_position));
+    println!("Part1: {}", part1(&mut map));
+    println!("Part2: {}", part2(&map, initial_guard_pos));
 
     Ok(())
+}
+
+fn part1(map: &mut Map) -> usize {
+    while map.move_guard() {}
+
+    map.visited.len()
 }
 
 fn part2(map: &Map, start_pos: Position) -> usize {
@@ -102,6 +83,37 @@ impl Map {
         }
     }
 
+    fn from_file(path: &str) -> std::io::Result<Self> {
+        let f = File::open(path)?;
+        let reader = BufReader::new(f);
+        let lines = reader.lines();
+
+        let mut obstacles: HashSet<Position> = HashSet::new();
+        let mut guard_position: Position = (0, 0);
+        let mut x_size = 0;
+        let mut y_size = 0;
+
+        for (y, line) in lines.enumerate() {
+            let Ok(line) = line else {
+                continue;
+            };
+            if line.is_empty() {
+                continue;
+            }
+            for (x, c) in line.chars().enumerate() {
+                x_size = max(x_size, x);
+                match c {
+                    '#' => _ = obstacles.insert((x as i32, y as i32)),
+                    '^' => guard_position = (x as i32, y as i32),
+                    _ => continue,
+                }
+            }
+            y_size = max(y_size, y);
+        }
+
+        Ok(Self::new(x_size + 1, y_size + 1, guard_position, &obstacles))
+    }
+
     fn move_guard(&mut self) -> bool {
         // println!("Guard position: {:?}", self.guard_pos);
         let pos_update = match self.guard_dir {
@@ -136,5 +148,28 @@ impl Map {
         // dbg!(&map);
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() -> std::io::Result<()> {
+        let mut map = Map::from_file("../test_input/day06test.txt")?;
+        assert_eq!(part1(&mut map), 41);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        let mut map = Map::from_file("../test_input/day06test.txt")?;
+        let init_guard_pos = map.guard_pos;
+        part1(&mut map);
+        assert_eq!(part2(&mut map, init_guard_pos), 6);
+
+        Ok(())
     }
 }
