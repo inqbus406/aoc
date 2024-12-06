@@ -115,7 +115,6 @@ impl Map {
     }
 
     fn move_guard(&mut self) -> bool {
-        // println!("Guard position: {:?}", self.guard_pos);
         let pos_update = match self.guard_dir {
             Direction::North => (0, -1),
             Direction::East => (1, 0),
