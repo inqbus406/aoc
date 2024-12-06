@@ -37,9 +37,26 @@ fn main() -> std::io::Result<()> {
     while map.move_guard() {};
 
     println!("Part1: {}", map.visited.len());
+    println!("Part2: {}", part2(&map, guard_position));
 
     Ok(())
 }
+
+fn part2(map: &Map, start_pos: Position) -> usize {
+    let mut works = HashSet::new();
+
+    for (x, y) in map.visited.iter() {
+        let mut test_obstacles = map.obstacles.clone();
+        test_obstacles.insert((*x, *y));
+        let mut m = Map::new(map.x_size, map.y_size, start_pos, &test_obstacles);
+        if m.check_for_loop(map.visited.len() * 2) {
+            works.insert((*x, *y));
+        }
+    }
+
+    works.len()
+}
+
 
 #[derive(Debug)]
 enum Direction {
@@ -95,17 +112,29 @@ impl Map {
         };
         let next_pos = (self.guard_pos.0 + pos_update.0, self.guard_pos.1 + pos_update.1);
         if next_pos.0 < 0 || next_pos.0 >= self.x_size as i32 || next_pos.1 < 0 || next_pos.1 >= self.y_size as i32 {
-            // dbg!(&self);
-            // println!("Guard ended at {:?}", self.guard_pos);
             return false;
         }
         if self.obstacles.contains(&next_pos) {
             self.guard_dir.turn_right();
-            // println!("Turned at: {:?}", self.guard_pos);
             return self.move_guard();
         }
         self.visited.insert(next_pos);
         self.guard_pos = next_pos;
         true
+    }
+
+    fn check_for_loop(&mut self, max_iter: usize) -> bool {
+        let mut last_visited = 1;
+        let mut count = 0;
+        while self.move_guard() {
+            count += 1;
+            if self.visited.len() == last_visited && count > max_iter {
+                return true;
+            }
+            last_visited = self.visited.len();
+        }
+        // dbg!(&map);
+
+        false
     }
 }
