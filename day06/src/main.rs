@@ -6,7 +6,7 @@ use std::io::{BufRead, BufReader};
 type Position = (i32, i32);
 
 fn main() -> std::io::Result<()> {
-    let mut map = Map::from_file("day06/input.txt")?;
+    let mut map = Map::from_file("input/day06.txt")?;
     let initial_guard_pos = map.guard_pos;
 
     while map.move_guard() {};
