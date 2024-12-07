@@ -170,4 +170,12 @@ mod day06_tests {
 
         Ok(())
     }
+
+    #[bench]
+    fn bench_part2() -> std::io::Result<usize> {
+        let mut map = Map::from_file("../input/day06.txt")?;
+        let init_guard_pos = map.guard_pos;
+        part1(&mut map);
+        Ok(part2(&mut map, init_guard_pos))
+    }
 }
