@@ -4,11 +4,24 @@ use std::io::{BufRead, BufReader};
 struct Equation(u64, Vec<u64>);
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("input/day07.txt")?;
+    let equations = parse_equations("input/day07.txt")?;
+
+    let part1 = equations.iter().filter(|&e| is_valid(e, false))
+        .map(|e| e.0).sum::<u64>();
+    let part2 = equations.iter().filter(|&e| is_valid(e, true))
+        .map(|e| e.0).sum::<u64>();
+    println!("Part1 = {}", part1);
+    println!("Part2 = {}", part2);
+
+    Ok(())
+}
+
+fn parse_equations(path: &str) -> std::io::Result<Vec<Equation>> {
+    let f = File::open(path)?;
     let reader = BufReader::new(f);
     let lines = reader.lines();
 
-    let mut equations: Vec<Equation> = Vec::new();
+    let mut equations = Vec::new();
 
     for line in lines {
         let Ok(line) = line else {
@@ -24,14 +37,10 @@ fn main() -> std::io::Result<()> {
         equations.push(Equation(test_val, numbers));
     }
 
-    let part1 = equations.iter().filter(|&e| is_valid(e))
-        .map(|e| e.0).sum::<u64>();
-    println!("Part1 = {}", part1);
-
-    Ok(())
+    Ok(equations)
 }
 
-fn is_valid(equation: &Equation) -> bool {
+fn is_valid(equation: &Equation, part2: bool) -> bool {
     if equation.0 == equation.1.iter().sum()
         || equation.0 == equation.1.iter().product() {
         return true;
@@ -39,7 +48,7 @@ fn is_valid(equation: &Equation) -> bool {
     if equation.1.len() < 2 {
         return false;
     }
-    if equation.1.len() == 2 && equation.0 == concat(equation.1[0], equation.1[1]) {
+    if part2 && equation.1.len() == 2 && equation.0 == concat(equation.1[0], equation.1[1]) {
         return true;
     }
     if equation.1.len() == 2 {
@@ -52,9 +61,9 @@ fn is_valid(equation: &Equation) -> bool {
     vec2.extend(&equation.1[2..]);
     vec3.extend(&equation.1[2..]);
 
-    is_valid(&Equation(equation.0, vec1))
-        || is_valid(&Equation(equation.0, vec2))
-        || is_valid(&Equation(equation.0, vec3))
+    is_valid(&Equation(equation.0, vec1), part2)
+        || is_valid(&Equation(equation.0, vec2), part2)
+        || (part2 && is_valid(&Equation(equation.0, vec3), part2))
 }
 
 fn concat(num1: u64, num2: u64) -> u64 {
