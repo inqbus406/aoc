@@ -6,12 +6,16 @@ struct Equation(u64, Vec<u64>);
 fn main() -> std::io::Result<()> {
     let equations = parse_equations("input/day07.txt")?;
 
+    let part1_start = std::time::Instant::now();
     let part1 = equations.iter().filter(|&e| is_valid(e, false))
         .map(|e| e.0).sum::<u64>();
+    let part2_start = std::time::Instant::now();
     let part2 = equations.iter().filter(|&e| is_valid(e, true))
         .map(|e| e.0).sum::<u64>();
-    println!("Part1 = {}", part1);
-    println!("Part2 = {}", part2);
+    let end = std::time::Instant::now();
+    println!("Part1 = {}, duration: {:?}", part1, part2_start.duration_since(part1_start));
+    println!("Part2 = {}, duration: {:?}", part2, end.duration_since(part2_start));
+    println!("Total: {:?}", end.duration_since(part1_start));
 
     Ok(())
 }
