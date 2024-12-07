@@ -41,29 +41,27 @@ fn parse_equations(path: &str) -> std::io::Result<Vec<Equation>> {
 }
 
 fn is_valid(equation: &Equation, part2: bool) -> bool {
-    if equation.0 == equation.1.iter().sum()
-        || equation.0 == equation.1.iter().product() {
-        return true;
-    }
-    if equation.1.len() < 2 {
-        return false;
-    }
-    if part2 && equation.1.len() == 2 && equation.0 == concat(equation.1[0], equation.1[1]) {
-        return true;
-    }
-    if equation.1.len() == 2 {
-        return false;
-    }
-    let mut vec1 = vec![equation.1[0] + equation.1[1]];
-    let mut vec2 = vec![equation.1[0] * equation.1[1]];
-    let mut vec3 = vec![concat(equation.1[0],equation.1[1])];
-    vec1.extend(&equation.1[2..]);
-    vec2.extend(&equation.1[2..]);
-    vec3.extend(&equation.1[2..]);
+    match equation.1.as_slice() {
+        [num] => *num == equation.0,
+        [num1, num2] => {
+            equation.0 == num1 + num2
+                || equation.0 == num1 * num2
+                || (part2 && equation.0 == concat(*num1, *num2))
+        },
+        [num1, num2, rest @ ..] => {
+            let mut vec1 = vec![num1 + num2];
+            let mut vec2 = vec![num1 * num2];
+            let mut vec3 = vec![concat(*num1, *num2)];
+            vec1.extend(rest);
+            vec2.extend(rest);
+            vec3.extend(rest);
 
-    is_valid(&Equation(equation.0, vec1), part2)
-        || is_valid(&Equation(equation.0, vec2), part2)
-        || (part2 && is_valid(&Equation(equation.0, vec3), part2))
+            is_valid(&Equation(equation.0, vec1), part2)
+                || is_valid(&Equation(equation.0, vec2), part2)
+                || (part2 && is_valid(&Equation(equation.0, vec3), part2))
+        },
+        _ => false,
+    }
 }
 
 fn concat(num1: u64, num2: u64) -> u64 {
@@ -78,5 +76,25 @@ mod tests {
     fn test_concat() {
         assert_eq!(concat(11, 12), 1112);
         assert_eq!(concat(123, 45), 12345);
+    }
+
+    #[test]
+    fn test_part1() -> std::io::Result<()> {
+        let equations = parse_equations("../test_input/day07test.txt")?;
+        let part1 = equations.iter().filter(|&e| is_valid(e, false))
+            .map(|e| e.0).sum::<u64>();
+        assert_eq!(part1, 3749);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        let equations = parse_equations("../test_input/day07test.txt")?;
+        let part2 = equations.iter().filter(|&e| is_valid(e, true))
+            .map(|e| e.0).sum::<u64>();
+        assert_eq!(part2, 11387);
+
+        Ok(())
     }
 }
