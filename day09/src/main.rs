@@ -6,8 +6,7 @@ use std::io::{BufRead, BufReader};
 fn main() -> std::io::Result<()> {
     let f = File::open("input/day09.txt")?;
     let reader = BufReader::new(f);
-    let input = reader.lines().nth(0).unwrap().unwrap();
-
+    let input = reader.lines().nth(0).unwrap()?;
 
     println!("Part1: {}", part1(&input));
     println!("Part2: {}", part2(&input));
@@ -132,4 +131,29 @@ fn is_compact(v: &Vec<Option<usize>>) -> bool {
     let total = v.iter().filter(|v| v.is_some()).count();
 
     v[0..total].iter().all(|v| v.is_some())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() -> std::io::Result<()> {
+        let f = File::open("../test_input/day09test.txt")?;
+        let reader = BufReader::new(f);
+        let input = reader.lines().nth(0).unwrap()?;
+        assert_eq!(part1(&input), 1928);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        let f = File::open("../test_input/day09test.txt")?;
+        let reader = BufReader::new(f);
+        let input = reader.lines().nth(0).unwrap()?;
+        assert_eq!(part2(&input), 2858);
+
+        Ok(())
+    }
 }
