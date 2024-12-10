@@ -37,7 +37,7 @@ struct Map {
 }
 
 impl Map {
-    fn from_file<T: AsRef<Path>>(path: T) -> std::io::Result<Self> {
+    fn from_file(path: impl AsRef<Path>) -> std::io::Result<Self> {
         let f= File::open(path)?;
         let reader = BufReader::new(f);
         let lines = reader.lines();
