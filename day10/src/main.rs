@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-
-type Map = Vec<Vec<u32>>;
+use std::path::Path;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Point {
@@ -20,102 +19,138 @@ impl Point {
 }
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("input/day10.txt")?;
-    let reader = BufReader::new(f);
-    let lines = reader.lines();
+    let map = Map::from_file("input/day10.txt")?;
 
-    let mut map = Map::new();
-    let mut trailheads = Vec::new();
+    let part1 = map.part1();
+    let part2 = map.part2();
 
-    for (y, line) in lines.enumerate() {
-        let Ok(line) = line else {
-            continue;
-        };
-        if line.is_empty() {
-            continue;
-        }
-        for (x, c) in line.chars().enumerate() {
-            let num = c.to_digit(10).unwrap();
-            if num == 0 {
-                trailheads.push(Point{x: x as i32, y: y as i32});
-            }
-        }
-        map.push(line.chars().map(|c| c.to_digit(10).unwrap()).collect());
-    }
-
-    let part1 = part1(&trailheads, &map);
-    let part2 = part2(&trailheads, &map);
     println!("Part 1: {}", part1);
     println!("Part 2: {}", part2);
 
     Ok(())
 }
 
-fn part1(trailheads: &Vec<Point>, map: &Map) -> usize {
-    trailheads.iter().map(|p| explore(p, map).iter().count()).sum()
+
+struct Map {
+    map: Vec<Vec<u32>>,
+    trailheads: Vec<Point>,
 }
 
-fn part2(trailheads: &Vec<Point>, map: &Map) -> usize {
-    trailheads.iter().map(|p| explore_part2(p, map)).sum()
-}
+impl Map {
+    fn from_file<T: AsRef<Path>>(path: T) -> std::io::Result<Self> {
+        let f= File::open(path)?;
+        let reader = BufReader::new(f);
+        let lines = reader.lines();
 
-// Returns 9s reachable via this starting point
-fn explore(start: &Point, map: &Map) -> HashSet<Point> {
-    if !in_bounds(start, map) {
-        // Out of bounds
-        return HashSet::new();
-    }
-    if lookup(start, map) == 9 {
-        let mut result = HashSet::new();
-        result.insert(start.clone());
-        return result;
-    }
-    let to_explore = get_neighbors(start).into_iter().filter(|p|
-        in_bounds(p, map) && passable(start, p, map)).collect::<Vec<_>>();
+        let mut map = Vec::new();
+        let mut trailheads = Vec::new();
 
-    let mut reachable_nines = HashSet::new();
-    for p in to_explore {
-        for nine in explore(&p, map) {
-            reachable_nines.insert(nine);
+        for (y, line) in lines.enumerate() {
+            let Ok(line) = line else {
+                continue;
+            };
+            if line.is_empty() {
+                continue;
+            }
+            for (x, c) in line.chars().enumerate() {
+                let num = c.to_digit(10).unwrap();
+                if num == 0 {
+                    trailheads.push(Point{x: x as i32, y: y as i32});
+                }
+            }
+            map.push(line.chars().map(|c| c.to_digit(10).unwrap()).collect());
         }
+
+        Ok(Self { map, trailheads })
     }
 
-    reachable_nines
-}
-
-fn explore_part2(start: &Point, map: &Map) -> usize {
-    if !in_bounds(start, map) {
-        // Out of bounds
-        return 0;
+    fn part1(&self) -> usize {
+        self.trailheads.iter().map(|p| self.explore(p).iter().count()).sum()
     }
-    if lookup(start, map) == 9 {
-        return 1;
+
+    fn part2(&self) -> usize {
+        self.trailheads.iter().map(|p| self.explore_part2(p)).sum()
     }
-    get_neighbors(start).into_iter()
-        .filter(|p| in_bounds(p, map) && passable(start, p, map))
-        .map(|p| explore_part2(&p, map))
-        .sum()
-}
 
-fn get_neighbors(start: &Point) -> Vec<Point> {
-    vec![Point{x: start.x + 1, y: start.y},
-         Point{x: start.x - 1, y: start.y},
-         Point{x: start.x, y: start.y - 1},
-         Point{x: start.x, y: start.y + 1}]
-}
-
-fn passable(point0: &Point, point1: &Point, map: &Map) -> bool {
-    lookup(point1, map) == lookup(point0, map) + 1
-}
-
-fn in_bounds(point: &Point, map: &Map) -> bool {
-    point.x >= 0 && point.x < map[0].len() as i32 && point.y >= 0 && point.y < map.len() as i32
-}
-
-fn lookup(point: &Point, map: &Map) -> u32 {
-    if !in_bounds(point, map) {
-        // Out of bounds
-        panic!();
+    fn passable(&self, point0: &Point, point1: &Point) -> bool {
+        self.lookup(point1) == self.lookup(point0) + 1
     }
-    map[point.y as usize][point.x as usize]
+
+    fn in_bounds(&self, point: &Point) -> bool {
+        point.x >= 0
+            && point.x < self.map[0].len() as i32
+            && point.y >= 0
+            && point.y < self.map.len() as i32
+    }
+
+    fn lookup(&self, point: &Point) -> u32 {
+        if !self.in_bounds(point) {
+            // Out of bounds
+            panic!();
+        }
+        self.map[point.y as usize][point.x as usize]
+    }
+
+    // Returns 9s reachable via this starting point
+    fn explore(&self, start: &Point) -> HashSet<Point> {
+        if !self.in_bounds(start) {
+            // Out of bounds
+            return HashSet::new();
+        }
+        if self.lookup(start) == 9 {
+            let mut result = HashSet::new();
+            result.insert(start.clone());
+            return result;
+        }
+
+        self.get_neighbors(start).into_iter()
+            .filter(|p| self.passable(start, p))
+            .flat_map(|p| self.explore(&p))
+            .collect::<HashSet<_>>()
+    }
+
+    fn explore_part2(&self, start: &Point) -> usize {
+        if !self.in_bounds(start) {
+            // Out of bounds
+            return 0;
+        }
+        if self.lookup(start) == 9 {
+            return 1;
+        }
+        self.get_neighbors(start).into_iter()
+            .filter(|p| self.passable(start, p))
+            .map(|p| self.explore_part2(&p))
+            .sum()
+    }
+
+    fn get_neighbors(&self, start: &Point) -> Vec<Point> {
+        vec![Point{x: start.x + 1, y: start.y},
+             Point{x: start.x - 1, y: start.y},
+             Point{x: start.x, y: start.y - 1},
+             Point{x: start.x, y: start.y + 1}]
+            .into_iter().filter(|p| self.in_bounds(p))
+            .collect()
+    }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() -> std::io::Result<()> {
+        let map = Map::from_file("../test_input/day10test.txt")?;
+        assert_eq!(map.part1(), 36);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        let map = Map::from_file("../test_input/day10test.txt")?;
+        assert_eq!(map.part2(), 81);
+
+        Ok(())
+    }
+}
+
