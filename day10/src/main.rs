@@ -70,7 +70,7 @@ fn explore(start: &Point, map: &Map) -> HashSet<Point> {
         result.insert(start.clone());
         return result;
     }
-    let to_explore = get_neighbors(start, map).into_iter().filter(|p|
+    let to_explore = get_neighbors(start).into_iter().filter(|p|
         in_bounds(p, map) && passable(start, p, map)).collect::<Vec<_>>();
 
     let mut reachable_nines = HashSet::new();
@@ -91,13 +91,13 @@ fn explore_part2(start: &Point, map: &Map) -> usize {
     if lookup(start, map) == 9 {
         return 1;
     }
-    let to_explore = get_neighbors(start, map).into_iter().filter(|p|
-        in_bounds(p, map) && passable(start, p, map)).collect::<Vec<_>>();
-
-    to_explore.iter().map(|p| explore_part2(&p, map)).sum()
+    get_neighbors(start).into_iter()
+        .filter(|p| in_bounds(p, map) && passable(start, p, map))
+        .map(|p| explore_part2(&p, map))
+        .sum()
 }
 
-fn get_neighbors(start: &Point, map: &Map) -> Vec<Point> {
+fn get_neighbors(start: &Point) -> Vec<Point> {
     vec![Point{x: start.x + 1, y: start.y},
          Point{x: start.x - 1, y: start.y},
          Point{x: start.x, y: start.y - 1},
