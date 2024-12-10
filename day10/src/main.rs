@@ -44,8 +44,9 @@ fn main() -> std::io::Result<()> {
     }
 
     let part1 = part1(&trailheads, &map);
+    let part2 = part2(&trailheads, &map);
     println!("Part 1: {}", part1);
-
+    println!("Part 2: {}", part2);
 
     Ok(())
 }
@@ -54,7 +55,11 @@ fn part1(trailheads: &Vec<Point>, map: &Map) -> usize {
     trailheads.iter().map(|p| explore(p, map).iter().count()).sum()
 }
 
-// Returns number of ways a 9 is reachable via this starting point
+fn part2(trailheads: &Vec<Point>, map: &Map) -> usize {
+    trailheads.iter().map(|p| explore_part2(p, map)).sum()
+}
+
+// Returns 9s reachable via this starting point
 fn explore(start: &Point, map: &Map) -> HashSet<Point> {
     if !in_bounds(start, map) {
         // Out of bounds
@@ -65,11 +70,7 @@ fn explore(start: &Point, map: &Map) -> HashSet<Point> {
         result.insert(start.clone());
         return result;
     }
-    let directions = vec![Point{x: start.x + 1, y: start.y},
-                                     Point{x: start.x - 1, y: start.y},
-                                     Point{x: start.x, y: start.y - 1},
-                                     Point{x: start.x, y: start.y + 1}];
-    let to_explore = directions.into_iter().filter(|p|
+    let to_explore = get_neighbors(start, map).into_iter().filter(|p|
         in_bounds(p, map) && passable(start, p, map)).collect::<Vec<_>>();
 
     let mut reachable_nines = HashSet::new();
@@ -80,8 +81,27 @@ fn explore(start: &Point, map: &Map) -> HashSet<Point> {
     }
 
     reachable_nines
+}
 
+fn explore_part2(start: &Point, map: &Map) -> usize {
+    if !in_bounds(start, map) {
+        // Out of bounds
+        return 0;
+    }
+    if lookup(start, map) == 9 {
+        return 1;
+    }
+    let to_explore = get_neighbors(start, map).into_iter().filter(|p|
+        in_bounds(p, map) && passable(start, p, map)).collect::<Vec<_>>();
 
+    to_explore.iter().map(|p| explore_part2(&p, map)).sum()
+}
+
+fn get_neighbors(start: &Point, map: &Map) -> Vec<Point> {
+    vec![Point{x: start.x + 1, y: start.y},
+         Point{x: start.x - 1, y: start.y},
+         Point{x: start.x, y: start.y - 1},
+         Point{x: start.x, y: start.y + 1}]
 }
 
 fn passable(point0: &Point, point1: &Point, map: &Map) -> bool {
