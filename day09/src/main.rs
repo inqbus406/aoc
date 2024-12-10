@@ -8,8 +8,14 @@ fn main() -> std::io::Result<()> {
     let reader = BufReader::new(f);
     let input = reader.lines().nth(0).unwrap()?;
 
-    println!("Part1: {}", part1(&input));
-    println!("Part2: {}", part2(&input));
+    let part1_start = std::time::Instant::now();
+    let part1_result = part1(&input);
+    let part2_start = std::time::Instant::now();
+    let part2_result = part2(&input);
+    let end = std::time::Instant::now();
+
+    println!("Part1: {}, duration: {:?}", part1_result, part2_start.duration_since(part1_start));
+    println!("Part2: {}, duration: {:?}", part2_result, end.duration_since(part2_start));
 
     Ok(())
 }
@@ -42,7 +48,7 @@ fn part1(input: &str) -> usize {
             break;
         }
         let (val, index) = stack.pop_front().unwrap();
-        result[index] = None;
+        result.remove(index);
         result[i] = Some(val);
     }
 
@@ -66,9 +72,10 @@ impl Block {
     }
 }
 
+
 fn part2(input: &str) -> usize {
     let mut stack = LinkedList::new();
-    let mut free_list = LinkedList::new();
+    let mut free_list = LinkedList::new();  // this is faster as a Vec!
 
     let mut index = 0usize;
     let mut max_index = 0usize;
