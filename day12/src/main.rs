@@ -65,21 +65,87 @@ fn main() -> std::io::Result<()> {
 
 
     let mut part1 = 0;
+    let mut part2 = 0;
     for (c, regions) in crops.iter() {
         for region in regions {
             let area = area(region);
             let perimeter = perimeter(region);
             let product = area * perimeter;
+            let corners = region.iter().map(|p| corners(p, region, &map)).sum::<usize>();
+            let part2_product = area * corners;
             // println!("Region {} has price {} * {} = {}", c, area, perimeter, product);
+            // println!("Region {} has price {} * {} = {}", c, area, corners, part2_product);
             part1 += product;
+            part2 += part2_product;
         }
     }
 
     println!("Part 1: {}", part1);
+    println!("Part 2: {}", part2);
 
     // dbg!(&map);
 
     Ok(())
+}
+
+fn corners(p: &Point, region: &HashSet<Point>, map: &Map) -> usize {
+    if !region.contains(p) {
+        panic!();
+    }
+    let all_neighbors = map.get_neighbors_nodiag(p);
+    let all_neighbors_diag = map.get_neighbors_diag(p);
+
+    let neighbors = all_neighbors.iter()
+        .filter(|neighbor| region.contains(neighbor)).collect_vec();
+    let neighbors_diag = all_neighbors_diag.iter()
+        .filter(|neighbor| region.contains(neighbor)).collect_vec();
+
+    let result = match neighbors.len() {
+        0 => 4,
+        1 => 2,
+        2 => {
+            if neighbors.iter().all(|neighbor| neighbor.x == p.x) || neighbors.iter().all(|neighbor| neighbor.y == p.y) {
+                // middle of a straight piece, no corners
+                0
+            } else {
+                // center of an L
+                if region.contains(&Point{x: neighbors[0].x, y: neighbors[1].y})
+                    && region.contains(&Point{x: neighbors[1].x, y: neighbors[0].y}) {
+                    1
+                } else {
+                    2
+                }
+            }
+        },
+        3 => { // T with or without diagonal neighbors
+            let mut result = 2usize;
+            let same_x = neighbors.iter().filter(|neighbor| neighbor.x == p.x).collect_vec();
+            let same_y = neighbors.iter().filter(|neighbor| neighbor.y == p.y).collect_vec();
+            if same_x.len() == 2 {
+                // sideways T or reverse
+                if neighbors_diag.contains(&&Point{x: same_y[0].x, y: same_x[0].y}) {
+                    result -= 1;
+                }
+                if neighbors_diag.contains(&&Point{x: same_y[0].x, y: same_x[1].y}) {
+                    result -= 1;
+                }
+            } else {
+                // proper T or upside down
+                if neighbors_diag.contains(&&Point{x: same_y[0].x, y: same_x[0].y}) {
+                    result -= 1;
+                }
+                if neighbors_diag.contains(&&Point{x: same_y[1].x, y: same_x[0].y}) {
+                    result -= 1;
+                }
+            }
+            result
+        },
+        4 => 4 - neighbors_diag.len(),
+        _ => unreachable!(),
+    };
+
+    // println!("{:?} has {} corners!", p, result);
+    result
 }
 
 fn combine_sets(sets: &Vec<HashSet<Point>>) -> Vec<HashSet<Point>> {
@@ -148,6 +214,24 @@ impl Map {
              Point{x: start.x, y: start.y - 1},
              Point{x: start.x, y: start.y + 1},
              Point{x: start.x + 1, y: start.y + 1}]
+            .into_iter().filter(|p| self.in_bounds(p))
+            .collect()
+    }
+
+    fn get_neighbors_nodiag(&self, start: &Point) -> Vec<Point> {
+        vec![Point{x: start.x + 1, y: start.y},
+             Point{x: start.x - 1, y: start.y},
+             Point{x: start.x, y: start.y - 1},
+             Point{x: start.x, y: start.y + 1}]
+            .into_iter().filter(|p| self.in_bounds(p))
+            .collect()
+    }
+
+    fn get_neighbors_diag(&self, start: &Point) -> Vec<Point> {
+        vec![Point{x: start.x + 1, y: start.y + 1},
+             Point{x: start.x + 1, y: start.y - 1},
+             Point{x: start.x - 1, y: start.y + 1},
+             Point{x: start.x - 1, y: start.y - 1}]
             .into_iter().filter(|p| self.in_bounds(p))
             .collect()
     }
