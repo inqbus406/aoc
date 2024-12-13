@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::time::Instant;
 use regex::Regex;
 
 const PART2_OFFSET: i64 = 10000000000000;
@@ -8,6 +9,8 @@ fn main() -> std::io::Result<()> {
     let f = File::open("input/day13.txt")?;
     let reader = BufReader::new(f);
     let lines = reader.lines();
+
+    let parse_start = Instant::now();
 
     let mut machines = Vec::new();
 
@@ -23,10 +26,14 @@ fn main() -> std::io::Result<()> {
         buffer.push_str(&line);
     }
     machines.push(Machine::from_str(&buffer));
+
+    let start = Instant::now();
+    println!("File parse time: {:?}", start.duration_since(parse_start));
     let part1 = machines.iter()
         .map(|m| m.min_tokens_to_win())
         .sum::<i64>();
-    println!("Part 1: {}", part1);
+    let part1_end = Instant::now();
+    println!("Part 1: {}, duration: {:?}", part1, part1_end.duration_since(start));
 
     // part2
     for mut machine in machines.iter_mut() {
@@ -36,7 +43,8 @@ fn main() -> std::io::Result<()> {
     let part2 = machines.iter()
         .map(|m| m.min_tokens_to_win())
         .sum::<i64>();
-    println!("Part 2: {}", part2);
+    let part2_end = Instant::now();
+    println!("Part 2: {}, duration: {:?}", part2, part2_end.duration_since(part1_end));
 
     Ok(())
 }
