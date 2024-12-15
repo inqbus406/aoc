@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("test_input/day15test3.txt")?;
+    let f = File::open("input/day15.txt")?;
     let mut reader = BufReader::new(f);
     let mut map_str = String::new();
 
@@ -16,7 +16,7 @@ fn main() -> std::io::Result<()> {
     }
 
     let mut map = Map::from_str(&map_str);
-    map.display();
+    // map.display();
     let mut buffer = String::new();
 
     // Get the instructions
@@ -44,7 +44,7 @@ fn main() -> std::io::Result<()> {
     // reset the map
     let mut map = Map::from_str(&map_str);
     map.part2ify();
-    map.display();
+    // map.display();
     for dir in buffer.chars() {
         if dir.is_whitespace() {
             continue;
@@ -182,7 +182,11 @@ impl Map {
         }
 
         // Check if there's a box there and try to move it if so
-        let right_side = Position {x: b.x + 1, y: b.y};
+        let right_side = if self.doublewide {
+            Position {x: b.x + 1, y: b.y}
+        } else {
+            b.clone()
+        };
         if self.is_box(&next_pos) && next_pos != right_side && !self.can_move_box(&next_pos, dir) {
             return false;
         }
@@ -215,7 +219,11 @@ impl Map {
         }
 
         // only move if they can BOTH move!!
-        let right_side = Position {x: b.x + 1, y: b.y};
+        let right_side = if self.doublewide {
+            Position {x: b.x + 1, y: b.y}
+        } else {
+            b.clone()
+        };
         if (self.is_box(&b) && !self.can_move_box(&b, dir)) || (self.doublewide && self.is_box(&right_side) && !self.can_move_box(&b, dir)) {
             return false;
         }
