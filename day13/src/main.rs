@@ -36,7 +36,7 @@ fn main() -> std::io::Result<()> {
     println!("Part 1: {}, duration: {:?}", part1, part1_end.duration_since(start));
 
     // part2
-    for mut machine in machines.iter_mut() {
+    for machine in machines.iter_mut() {
         machine.prize.0 += PART2_OFFSET;
         machine.prize.1 += PART2_OFFSET;
     }

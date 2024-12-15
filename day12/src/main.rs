@@ -49,7 +49,7 @@ fn main() -> std::io::Result<()> {
         current_point = fringe.pop_front().unwrap();
     }
 
-    for (&c, mut regions) in &mut crops {
+    for (_, regions) in &mut crops {
         // println!("Checking {}", c);
         // dbg!(&regions.len());
         loop {
@@ -66,7 +66,7 @@ fn main() -> std::io::Result<()> {
 
     let mut part1 = 0;
     let mut part2 = 0;
-    for (c, regions) in crops.iter() {
+    for (_, regions) in crops.iter() {
         for region in regions {
             let area = area(region);
             let perimeter = perimeter(region);

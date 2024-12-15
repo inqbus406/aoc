@@ -131,6 +131,7 @@ impl Map {
         }).count()
     }
 
+    #[allow(dead_code)]
     fn display(&self, quadtrants: bool) {
         for y in 0..self.y_size {
             if quadtrants && y == self.y_size / 2 {

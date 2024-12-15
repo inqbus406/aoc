@@ -2,6 +2,7 @@ use std::cmp::max;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 
 fn main() -> std::io::Result<()> {
     let f = File::open("input/day15.txt")?;
@@ -267,6 +268,7 @@ impl Map {
         self.boxes.iter().map(|b| b.x + b.y * 100).sum()
     }
 
+    #[allow(dead_code)]
     fn display(&self) {
         for y in 0..self.y_size {
             for x in 0..self.x_size {
@@ -287,5 +289,67 @@ impl Map {
             }
             println!();
         }
+    }
+}
+
+fn run(path: impl AsRef<Path>, part2: bool) -> std::io::Result<i32> {
+    let f = File::open(path)?;
+    let mut reader = BufReader::new(f);
+    let mut map_str = String::new();
+
+    while let Ok(n) = reader.read_line(&mut map_str) {
+        if n == 2 { // Why does 2 work here? :hmmm:
+            // empty line, break
+            break;
+        }
+    }
+
+    let mut map = Map::from_str(&map_str);
+    if part2 {
+        map.part2ify();
+    }
+    let mut buffer = String::new();
+
+    // Get the instructions
+    while let Ok(n) = reader.read_line(&mut buffer) {
+        if n == 0 {
+            // Done with the file
+            break;
+        }
+    }
+
+    for dir in buffer.chars() {
+        if dir.is_whitespace() {
+            continue;
+        }
+        map.move_robot(dir);
+    }
+
+    Ok(map.gps_sum())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test1_part1() -> std::io::Result<()> {
+        assert_eq!(run("../test_input/day15test1.txt", false)?, 2028);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test2_part1() -> std::io::Result<()> {
+        assert_eq!(run("../test_input/day15test2.txt", false)?, 10092);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        assert_eq!(run("../test_input/day15test2.txt", true)?, 9021);
+
+        Ok(())
     }
 }
