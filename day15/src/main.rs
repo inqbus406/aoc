@@ -4,21 +4,20 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("input/day15.txt")?;
+    let f = File::open("test_input/day15test3.txt")?;
     let mut reader = BufReader::new(f);
-    let mut buffer = String::new();
+    let mut map_str = String::new();
 
-    while let Ok(n) = reader.read_line(&mut buffer) {
+    while let Ok(n) = reader.read_line(&mut map_str) {
         if n == 2 { // Why does 2 work here? :hmmm:
             // empty line, break
             break;
         }
     }
 
-    let mut map = Map::from_str(&buffer);
-    // println!("{}", buffer);
-    // dbg!(&map);
-    buffer.clear();
+    let mut map = Map::from_str(&map_str);
+    map.display();
+    let mut buffer = String::new();
 
     // Get the instructions
     while let Ok(n) = reader.read_line(&mut buffer) {
@@ -27,10 +26,6 @@ fn main() -> std::io::Result<()> {
             break;
         }
     }
-
-    // println!("{}", buffer);
-    map.display();
-    map.part2ify();
 
     for dir in buffer.chars() {
         if dir.is_whitespace() {
@@ -44,6 +39,24 @@ fn main() -> std::io::Result<()> {
     // map.display();
 
     println!("Part1: {}", map.gps_sum());
+
+    // Now do part2
+    // reset the map
+    let mut map = Map::from_str(&map_str);
+    map.part2ify();
+    map.display();
+    for dir in buffer.chars() {
+        if dir.is_whitespace() {
+            continue;
+        }
+        // map.display();
+        // println!();
+        // println!("Moving {dir}");
+        map.move_robot(dir);
+    }
+    // map.display();
+
+    println!("Part2: {}", map.gps_sum());
 
     Ok(())
 }
@@ -146,20 +159,12 @@ impl Map {
     fn can_move_box(&self, b: &Position, dir: char) -> bool {
         // println!("Checking: {:?}", b);
         let orig_b = b.clone();
-        let new_b = if self.doublewide && self.is_box(b) && !self.boxes.contains(b) {
+        let b = if self.doublewide && self.is_box(b) && !self.boxes.contains(b) {
             Position { x: b.x - 1, y: b.y }
         } else {
             orig_b
         };
-        // let b = match self.doublewide {
-        //     false => b.clone(),
-        //     true => if self.boxes.contains(b) {
-        //         b.clone()
-        //     } else {
-        //         Position { x: b.x - 1, y: b.y}
-        //     },
-        // };
-        let next_pos = Self::new_pos(&new_b, dir);
+        let next_pos = Self::new_pos(&b, dir);
         let next_pos_right = Position { x: next_pos.x + 1, y: next_pos.y};
         if !self.is_valid(&next_pos)
             || (self.doublewide && !self.is_valid(&next_pos_right)) {
@@ -177,7 +182,7 @@ impl Map {
         }
 
         // Check if there's a box there and try to move it if so
-        let right_side = Position {x: new_b.x + 1, y: new_b.y};
+        let right_side = Position {x: b.x + 1, y: b.y};
         if self.is_box(&next_pos) && next_pos != right_side && !self.can_move_box(&next_pos, dir) {
             return false;
         }
@@ -196,14 +201,6 @@ impl Map {
         } else {
             orig_b
         };
-        // let b = match self.doublewide {
-        //     false => b.clone(),
-        //     true => if self.boxes.contains(b) {
-        //         b.clone()
-        //     } else {
-        //         Position { x: b.x - 1, y: b.y}
-        //     },
-        // };
         let next_pos = Self::new_pos(&b, dir);
         let next_pos_right = Position { x: next_pos.x + 1, y: next_pos.y};
         if !self.is_valid(&next_pos)
