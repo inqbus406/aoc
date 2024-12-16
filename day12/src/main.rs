@@ -4,10 +4,12 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use itertools::Itertools;
 
+type Crops = HashMap<char, Vec<HashSet<Point>>>;
+
 fn main() -> std::io::Result<()> {
     let map = Map::from_file("input/day12.txt")?;
 
-    let mut crops = HashMap::new();
+    let mut crops = Crops::new();
     let mut explored = HashSet::new();
     let mut current_point = Point{x: 0, y: 0};
     let mut fringe = VecDeque::new();
@@ -17,7 +19,6 @@ fn main() -> std::io::Result<()> {
             current_point = fringe.pop_front().unwrap();
             continue;
         }
-        // println!("Exploring: {:?}", &current_point);
 
         let c = map.get(&current_point);
         if !crops.contains_key(&c) {
@@ -30,7 +31,6 @@ fn main() -> std::io::Result<()> {
                 if group.iter().any(|point| point.adjacent(&current_point)) {
                     group.insert(current_point);
                     found = true;
-                    //break; // actually don't break, add duplicates!
                 }
             }
             if !found {
@@ -60,32 +60,41 @@ fn main() -> std::io::Result<()> {
             regions.clear();
             regions.extend(new_regions);
         }
-        // dbg!(&regions.len());
     }
 
+    println!("Part 1: {}", part1(&crops));
+    println!("Part 2: {}", part2(&crops, &map));
 
-    let mut part1 = 0;
-    let mut part2 = 0;
-    for (_, regions) in crops.iter() {
+    Ok(())
+}
+
+fn part1(crops: &Crops) -> usize {
+    let mut result = 0;
+    for regions in crops.values() {
         for region in regions {
             let area = area(region);
             let perimeter = perimeter(region);
             let product = area * perimeter;
-            let corners = region.iter().map(|p| corners(p, region, &map)).sum::<usize>();
-            let part2_product = area * corners;
-            // println!("Region {} has price {} * {} = {}", c, area, perimeter, product);
-            // println!("Region {} has price {} * {} = {}", c, area, corners, part2_product);
-            part1 += product;
-            part2 += part2_product;
+            result += product;
         }
     }
 
-    println!("Part 1: {}", part1);
-    println!("Part 2: {}", part2);
+    result
+}
 
-    // dbg!(&map);
+fn part2(crops: &Crops, map: &Map) -> usize {
+    let mut result = 0;
 
-    Ok(())
+    for regions in crops.values() {
+        for region in regions {
+            let area = area(region);
+            let corners = region.iter().map(|p| corners(p, region, &map)).sum::<usize>();
+            let product = area * corners;
+            result += product;
+        }
+    }
+
+    result
 }
 
 fn corners(p: &Point, region: &HashSet<Point>, map: &Map) -> usize {
