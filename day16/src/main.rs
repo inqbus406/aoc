@@ -1,11 +1,11 @@
-use std::cmp::max;
-use std::collections::HashSet;
+use std::cmp::{max, min, Ordering};
+use std::collections::{BinaryHeap, HashSet};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let maze = Maze::from_file("input/day16.txt")?;
+    let mut maze = Maze::from_file("input/day16.txt")?;
 
     // dbg!(&maze);
     // maze.display();
@@ -14,6 +14,28 @@ fn main() -> std::io::Result<()> {
     println!("Part1: {}", part1);
 
     Ok(())
+}
+
+struct Next(Position, usize);
+
+impl Eq for Next {}
+
+impl PartialEq<Self> for Next {
+    fn eq(&self, other: &Self) -> bool {
+        self.1 == other.1
+    }
+}
+
+impl PartialOrd<Self> for Next {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Next {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.1.cmp(&self.1)
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -74,7 +96,7 @@ struct Maze {
     width: usize,
     height: usize,
     walls: HashSet<Position>,
-    visited: Vec<Position>,
+    visited: HashSet<Position>,
     end: Position,
     score: usize,
 }
@@ -88,7 +110,7 @@ impl Maze {
         let mut width = 0;
         let mut height = 0;
         let mut walls = HashSet::new();
-        let mut visited = Vec::new();
+        let mut visited = HashSet::new();
         let mut end = Position { x: 0, y: 0, dir: Direction::None };
 
         for (y, line) in lines.enumerate() {
@@ -104,7 +126,7 @@ impl Maze {
                 match c {
                     '#' => _ = walls.insert(p),
                     'E' => end = p,
-                    'S' => visited.push(Position{x: p.x, y: p.y, dir: Direction::East}),
+                    'S' => _ = visited.insert(Position{x: p.x, y: p.y, dir: Direction::East}),
                     _   => {}
                 }
             }
@@ -121,22 +143,36 @@ impl Maze {
         })
     }
 
-    fn solve(&self) -> usize {
-        let current = self.visited.last().unwrap();
-        // println!("Exploring: {:?}", current);
-        if *current == self.end {
-            return self.score;
+    fn solve(&mut self) -> usize {
+        let mut current = Next(self.visited.iter().last().unwrap().clone(), 0);
+        let mut fringe = BinaryHeap::new();
+        fringe.push(current);
+
+        let mut shortest = usize::MAX;
+
+        while !fringe.is_empty() {
+            current = fringe.pop().unwrap();
+            self.visited.insert(current.0);
+            if current.0 == self.end {
+                shortest = min(shortest, current.1);
+            }
+
+            for (neighbor, cost) in self.next_options(&current.0) {
+                fringe.push(Next(neighbor, cost + current.1));
+            }
         }
-        self.next_options().iter()
-            .map(|option| option.solve())
-            // .for_each(|option| println!("Option: {:?}", option));
-            .min()
-            .unwrap_or(usize::MAX)
+
+        shortest
+
+        // self.next_options().iter()
+        //     .map(|option| option.solve())
+        //     .min()
+        //     .unwrap_or(usize::MAX)
     }
 
-    fn next_options(&self) -> Vec<Self> {
+    fn next_options(&self, pos: &Position) -> Vec<(Position, usize)> {
         let mut options = Vec::new();
-        let current = self.visited.last().unwrap();
+        let current = pos.clone();
         let neighbors = [Position { x: current.x + 1, y: current.y, dir: Direction::East },
                                     Position { x: current.x - 1, y: current.y, dir: Direction::West },
                                     Position { x: current.x, y: current.y - 1, dir: Direction::North },
@@ -146,19 +182,8 @@ impl Maze {
             .collect::<Vec<Position>>();
 
         for neighbor in neighbors {
-            let mut visited = self.visited.clone();
-            visited.push(neighbor);
-
-            options.push(Self {
-                width: self.width,
-                height: self.height,
-                walls: self.walls.clone(),
-                visited,
-                end: self.end,
-                score: self.score + 1 + current.dir.turns_to(&neighbor.dir) * 1000,
-            })
+            options.push((neighbor, self.score + 1 + current.dir.turns_to(&neighbor.dir) * 1000));
         }
-
 
         options
     }
