@@ -1,28 +1,37 @@
 use std::cmp::{max, min, Ordering};
-use std::collections::{BinaryHeap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let mut maze = Maze::from_file("input/day16.txt")?;
+    let mut maze = Maze::from_file("test_input/day16test.txt")?;
 
     // dbg!(&maze);
     // maze.display();
     // return Ok(());
-    let part1 = maze.solve();
+    let (part1, part2) = maze.solve();
     println!("Part1: {}", part1);
+    println!("Part2: {}", part2);
+    maze.display();
 
     Ok(())
 }
 
-struct Next(Position, usize);
+struct Next {
+    loc: Position,
+    cost: usize,
+    tiles: HashMap<Position, usize>,
+}
+
 
 impl Eq for Next {}
 
 impl PartialEq<Self> for Next {
     fn eq(&self, other: &Self) -> bool {
-        self.1 == other.1
+        self.cost == other.cost
+            && self.loc == other.loc
+            && self.tiles == other.tiles
     }
 }
 
@@ -34,7 +43,8 @@ impl PartialOrd<Self> for Next {
 
 impl Ord for Next {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.1.cmp(&self.1)
+        other.cost.cmp(&self.cost)
+        // self.cost.cmp(&other.cost)
     }
 }
 
@@ -98,7 +108,7 @@ struct Maze {
     walls: HashSet<Position>,
     visited: HashSet<Position>,
     end: Position,
-    score: usize,
+    tiles: HashMap<Position, usize>,
 }
 
 impl Maze {
@@ -139,12 +149,18 @@ impl Maze {
             walls,
             visited,
             end,
-            score: 0,
+            tiles: HashMap::new(),
         })
     }
 
-    fn solve(&mut self) -> usize {
-        let mut current = Next(self.visited.iter().last().unwrap().clone(), 0);
+    fn solve(&mut self) -> (usize, usize) {
+        let mut current = Next {
+            loc: self.visited.iter().last().unwrap().clone(),
+            cost: 0,
+            tiles: HashMap::new()
+        };
+        current.tiles.insert(current.loc, 0);
+
         let mut fringe = BinaryHeap::new();
         fringe.push(current);
 
@@ -152,22 +168,35 @@ impl Maze {
 
         while !fringe.is_empty() {
             current = fringe.pop().unwrap();
-            self.visited.insert(current.0);
-            if current.0 == self.end {
-                shortest = min(shortest, current.1);
+            // println!();
+            // println!("Exploring: {:?}", current.loc);
+            self.visited.insert(current.loc);
+
+            if current.loc == self.end {
+                println!("found a solution!");
+                self.tiles.extend(&current.tiles);
+                shortest = min(shortest, current.cost);
             }
 
-            for (neighbor, cost) in self.next_options(&current.0) {
-                fringe.push(Next(neighbor, cost + current.1));
+            for (neighbor, cost) in self.next_options(&current.loc) {
+                println!("At {:?}, Option: {:?}, cost: {}", &current.loc, neighbor, cost);
+                // if self.visited.contains(&neighbor) && !self.tiles.contains_key(&neighbor) {
+                //     continue;
+                // }
+                let mut tiles = HashMap::new();
+                tiles.insert(neighbor, current.tiles.len());
+                tiles.extend(&current.tiles);
+
+                fringe.push(Next {
+                    loc: neighbor,
+                    cost: cost + current.cost,
+                    tiles,
+                });
             }
         }
 
-        shortest
+        (shortest, self.tiles.len())
 
-        // self.next_options().iter()
-        //     .map(|option| option.solve())
-        //     .min()
-        //     .unwrap_or(usize::MAX)
     }
 
     fn next_options(&self, pos: &Position) -> Vec<(Position, usize)> {
@@ -182,8 +211,10 @@ impl Maze {
             .collect::<Vec<Position>>();
 
         for neighbor in neighbors {
-            options.push((neighbor, self.score + 1 + current.dir.turns_to(&neighbor.dir) * 1000));
+            options.push((neighbor, 1 + current.dir.turns_to(&neighbor.dir) * 1000));
         }
+
+        // dbg!(&options);
 
         options
     }
@@ -201,6 +232,14 @@ impl Maze {
                     print!("#");
                     continue;
                 }
+                if self.tiles.contains_key(&p) {
+                    print!("O");
+                    continue;
+                }
+                // if self.visited.contains(&p) {
+                //     print!("x");
+                //     continue;
+                // }
                 print!(".");
             }
             println!();
