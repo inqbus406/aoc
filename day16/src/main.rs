@@ -1,4 +1,4 @@
-use std::cmp::{max, min, Ordering};
+use std::cmp::{max, Ordering};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -7,13 +7,9 @@ use std::io::{BufRead, BufReader};
 fn main() -> std::io::Result<()> {
     let mut maze = Maze::from_file("input/day16.txt")?;
 
-    // dbg!(&maze);
-    // maze.display();
-    // return Ok(());
     let (part1, part2) = maze.solve();
     println!("Part1: {}", part1);
     println!("Part2: {}", part2);
-    // maze.display();
 
     Ok(())
 }
@@ -24,7 +20,6 @@ struct Next {
     cost: usize,
     tiles: HashMap<Position, usize>,
 }
-
 
 impl Eq for Next {}
 
@@ -45,7 +40,6 @@ impl PartialOrd<Self> for Next {
 impl Ord for Next {
     fn cmp(&self, other: &Self) -> Ordering {
         other.cost.cmp(&self.cost)
-        // other.tiles.len().cmp(&self.tiles.len())
     }
 }
 
@@ -169,29 +163,18 @@ impl Maze {
 
         while !fringe.is_empty() {
             current = fringe.pop().unwrap();
-            // println!();
-            // println!("Exploring: {:?}", current.loc);
             self.visited.insert(current.loc, current.cost);
-            // self.display();
 
-            if current.loc == self.end && current.cost <= shortest{
-                // println!("found a solution!");
+            if current.loc == self.end && current.cost <= shortest {
                 if current.cost < shortest {
                     self.tiles.clear();
                     shortest = current.cost;
                 }
                 self.tiles.extend(&current.tiles);
-                // shortest = min(shortest, current.cost);
             }
 
             for (neighbor, cost) in self.next_options(&current.loc) {
-                // println!("At {:?}, current cost: {}, Option: {:?}, total_cost: {}", &current.loc, current.cost, neighbor, current.cost + cost);
-                // dbg!(&fringe);
-                // if self.visited.contains(&neighbor) && !self.tiles.contains_key(&neighbor) {
-                //     continue;
-                // }
                 if self.visited.contains_key(&neighbor) {
-                    // println!("Neighbor cost: {}", self.visited.get(&neighbor).unwrap());
                     if *self.visited.get(&neighbor).unwrap() as i32 >= (current.cost + cost) as i32 - 1000 {
                         self.visited.entry(neighbor).and_modify(|v| *v = current.cost + cost);
                     } else {
@@ -202,27 +185,12 @@ impl Maze {
                 tiles.insert(neighbor, current.tiles.len());
                 tiles.extend(&current.tiles);
 
-                // if self.visited.contains_key(&neighbor) {
-                //     if self.visited.get(&neighbor).unwrap() >= &cost {
-                //         self.visited.entry(neighbor).and_modify(|v| *v = cost);
-                //     } else {
-                //         continue;
-                //     }
-                // }
-
                 fringe.push(Next {
                     loc: neighbor,
                     cost: cost + current.cost,
                     tiles,
                 });
             }
-            // self.display();
-            // print!("At: {:?} fringe: ", current.loc);
-            // for item in &fringe {
-            //     print!("{:?} cost: {}, ", item.loc, item.cost);
-            // }
-            // println!();
-            // println!();
         }
 
         (shortest, self.tiles.len())
@@ -237,14 +205,13 @@ impl Maze {
                                     Position { x: current.x, y: current.y - 1, dir: Direction::North },
                                     Position { x: current.x, y: current.y + 1, dir: Direction::South }]
             .into_iter().filter(|p| !self.is_wall(p))
-            // .filter(|p| !self.visited.contains(p))
+            // .filter(|p| !self.visited.contains(p))  // Originally used this for part1, but needed all passable neighbors for part2
             .collect::<Vec<Position>>();
 
         for neighbor in neighbors {
             options.push((neighbor, 1 + current.dir.turns_to(&neighbor.dir) * 1000));
         }
 
-        // dbg!(&options);
 
         options
     }
@@ -290,5 +257,41 @@ mod tests {
         assert_eq!(Direction::East.turns_to(&Direction::West), 2);
         assert_eq!(Direction::East.turns_to(&Direction::South), 1);
         assert_eq!(Direction::East.turns_to(&Direction::North), 1);
+    }
+
+    #[test]
+    fn test1_part1() -> std::io::Result<()> {
+        let mut maze = Maze::from_file("../test_input/day16test.txt")?;
+        let (part1, _) = maze.solve();
+        assert_eq!(part1, 7036);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test2_part1() -> std::io::Result<()> {
+        let mut maze = Maze::from_file("../test_input/day16test2.txt")?;
+        let (part1, _) = maze.solve();
+        assert_eq!(part1, 11048);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test1_part2() -> std::io::Result<()> {
+        let mut maze = Maze::from_file("../test_input/day16test.txt")?;
+        let (_, part2) = maze.solve();
+        assert_eq!(part2, 45);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test2_part2() -> std::io::Result<()> {
+        let mut maze = Maze::from_file("../test_input/day16test2.txt")?;
+        let (_, part2) = maze.solve();
+        assert_eq!(part2, 64);
+
+        Ok(())
     }
 }
