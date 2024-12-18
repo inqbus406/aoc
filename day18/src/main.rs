@@ -4,14 +4,56 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 fn main() -> std::io::Result<()> {
+    // let walls = get_walls("test_input/day18test.txt")?;
+    let walls = get_walls("input/day18.txt")?;
+    let maze = Maze::from_slice(71, 71, &walls[0..1024]);
+    // let maze = Maze::from_slice(7, 7, &walls[0..12]);
     // let maze = Maze::from_file(7, 7, 12, "test_input/day18test.txt")?;
-    let maze = Maze::from_file(71, 71, 1024, "input/day18.txt")?;
+    // let maze = Maze::from_file(71, 71, 1024, "input/day18.txt")?;
     // maze.display();
 
     let part1 = maze.shortest_path_len().unwrap();
     println!("Part1: {}", part1);
 
+    // Part 2
+    for i in 0..walls.len() {
+        let maze = Maze::from_slice(71, 71, &walls[0..i]);
+        // let maze = Maze::from_slice(7, 7, &walls[0..i]);
+        match maze.shortest_path_len() {
+            Some(_) => {},
+            None => {
+                println!("Part2: {}", i);
+                return Ok(());
+            }
+        }
+        // if maze.shortest_path_len() == None {
+        //     println!("Part2: {}", i);
+        //     return Ok(())
+        // }
+        println!("i: {i} byte: {},{}", walls[i].x, walls[i].y);
+    }
+
     Ok(())
+}
+
+fn get_walls(path: impl AsRef<Path>) -> std::io::Result<Vec<Position>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let lines = reader.lines();
+
+    let mut walls = Vec::new();
+    for line in lines {
+        let Ok(line) = line else {
+            continue;
+        };
+        if line.is_empty() {
+            continue;
+        }
+        let nums = line.split(',').map(|s| s.parse::<i32>().unwrap()).collect::<Vec<i32>>();
+        walls.push(Position { x: nums[0], y: nums[1] });
+    }
+
+    Ok(walls)
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -55,7 +97,18 @@ impl Maze {
             walls.insert(Position { x: nums[0], y: nums[1] });
         }
 
-        Ok(Maze { width, height, walls })
+        Ok(Self { width, height, walls })
+    }
+
+    fn from_slice(width: usize, height: usize, walls_list: &[Position]) -> Self {
+        let mut walls = HashSet::new();
+        walls_list.iter().for_each(|pos| _ = walls.insert(pos.clone()));
+
+        Self {
+            width,
+            height,
+            walls
+        }
     }
 
     fn shortest_path_len(&self) -> Option<usize> {
@@ -69,6 +122,7 @@ impl Maze {
                 // self.display(&visited);
                 return Some(cur.steps);
             }
+            // dbg!(&fringe);
             // if visited.len() % 1000 == 0 {
             // dbg!(visited.len());
             // }
@@ -84,11 +138,10 @@ impl Maze {
                 //         continue;
                 //     }
                 // }
-                if fringe.iter().any(|n| n.loc == next.loc) {
-                    continue;
+                if !fringe.iter().any(|n| n.loc == next.loc) {
+                    fringe.push_back(next);
                 }
 
-                fringe.push_back(next);
             }
             // self.get_neighbors(&cur.loc).iter()
             //     .filter(|n| !visited[n.y as usize][n.x as usize])
