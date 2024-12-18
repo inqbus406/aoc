@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let mut maze = Maze::from_file("test_input/day16test.txt")?;
+    let mut maze = Maze::from_file("input/day16.txt")?;
 
     // dbg!(&maze);
     // maze.display();
@@ -13,11 +13,12 @@ fn main() -> std::io::Result<()> {
     let (part1, part2) = maze.solve();
     println!("Part1: {}", part1);
     println!("Part2: {}", part2);
-    maze.display();
+    // maze.display();
 
     Ok(())
 }
 
+#[derive(Debug)]
 struct Next {
     loc: Position,
     cost: usize,
@@ -44,7 +45,7 @@ impl PartialOrd<Self> for Next {
 impl Ord for Next {
     fn cmp(&self, other: &Self) -> Ordering {
         other.cost.cmp(&self.cost)
-        // self.cost.cmp(&other.cost)
+        // other.tiles.len().cmp(&self.tiles.len())
     }
 }
 
@@ -106,7 +107,7 @@ struct Maze {
     width: usize,
     height: usize,
     walls: HashSet<Position>,
-    visited: HashSet<Position>,
+    visited: HashMap<Position, usize>,  // store minimum cost to get there with visited tiles
     end: Position,
     tiles: HashMap<Position, usize>,
 }
@@ -120,7 +121,7 @@ impl Maze {
         let mut width = 0;
         let mut height = 0;
         let mut walls = HashSet::new();
-        let mut visited = HashSet::new();
+        let mut visited = HashMap::new();
         let mut end = Position { x: 0, y: 0, dir: Direction::None };
 
         for (y, line) in lines.enumerate() {
@@ -136,7 +137,7 @@ impl Maze {
                 match c {
                     '#' => _ = walls.insert(p),
                     'E' => end = p,
-                    'S' => _ = visited.insert(Position{x: p.x, y: p.y, dir: Direction::East}),
+                    'S' => _ = visited.insert(Position{x: p.x, y: p.y, dir: Direction::East}, 0),
                     _   => {}
                 }
             }
@@ -155,7 +156,7 @@ impl Maze {
 
     fn solve(&mut self) -> (usize, usize) {
         let mut current = Next {
-            loc: self.visited.iter().last().unwrap().clone(),
+            loc: self.visited.keys().nth(0).unwrap().clone(),
             cost: 0,
             tiles: HashMap::new()
         };
@@ -170,22 +171,44 @@ impl Maze {
             current = fringe.pop().unwrap();
             // println!();
             // println!("Exploring: {:?}", current.loc);
-            self.visited.insert(current.loc);
+            self.visited.insert(current.loc, current.cost);
+            // self.display();
 
-            if current.loc == self.end {
-                println!("found a solution!");
+            if current.loc == self.end && current.cost <= shortest{
+                // println!("found a solution!");
+                if current.cost < shortest {
+                    self.tiles.clear();
+                    shortest = current.cost;
+                }
                 self.tiles.extend(&current.tiles);
-                shortest = min(shortest, current.cost);
+                // shortest = min(shortest, current.cost);
             }
 
             for (neighbor, cost) in self.next_options(&current.loc) {
-                println!("At {:?}, Option: {:?}, cost: {}", &current.loc, neighbor, cost);
+                // println!("At {:?}, current cost: {}, Option: {:?}, total_cost: {}", &current.loc, current.cost, neighbor, current.cost + cost);
+                // dbg!(&fringe);
                 // if self.visited.contains(&neighbor) && !self.tiles.contains_key(&neighbor) {
                 //     continue;
                 // }
+                if self.visited.contains_key(&neighbor) {
+                    // println!("Neighbor cost: {}", self.visited.get(&neighbor).unwrap());
+                    if *self.visited.get(&neighbor).unwrap() as i32 >= (current.cost + cost) as i32 - 1000 {
+                        self.visited.entry(neighbor).and_modify(|v| *v = current.cost + cost);
+                    } else {
+                        continue;
+                    }
+                }
                 let mut tiles = HashMap::new();
                 tiles.insert(neighbor, current.tiles.len());
                 tiles.extend(&current.tiles);
+
+                // if self.visited.contains_key(&neighbor) {
+                //     if self.visited.get(&neighbor).unwrap() >= &cost {
+                //         self.visited.entry(neighbor).and_modify(|v| *v = cost);
+                //     } else {
+                //         continue;
+                //     }
+                // }
 
                 fringe.push(Next {
                     loc: neighbor,
@@ -193,6 +216,13 @@ impl Maze {
                     tiles,
                 });
             }
+            // self.display();
+            // print!("At: {:?} fringe: ", current.loc);
+            // for item in &fringe {
+            //     print!("{:?} cost: {}, ", item.loc, item.cost);
+            // }
+            // println!();
+            // println!();
         }
 
         (shortest, self.tiles.len())
@@ -207,7 +237,7 @@ impl Maze {
                                     Position { x: current.x, y: current.y - 1, dir: Direction::North },
                                     Position { x: current.x, y: current.y + 1, dir: Direction::South }]
             .into_iter().filter(|p| !self.is_wall(p))
-            .filter(|p| !self.visited.contains(p))
+            // .filter(|p| !self.visited.contains(p))
             .collect::<Vec<Position>>();
 
         for neighbor in neighbors {
@@ -236,10 +266,10 @@ impl Maze {
                     print!("O");
                     continue;
                 }
-                // if self.visited.contains(&p) {
-                //     print!("x");
-                //     continue;
-                // }
+                if self.visited.contains_key(&p) {
+                    print!("x");
+                    continue;
+                }
                 print!(".");
             }
             println!();
