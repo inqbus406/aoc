@@ -10,7 +10,7 @@ fn main() -> std::io::Result<()> {
     let mut map_str = String::new();
 
     while let Ok(n) = reader.read_line(&mut map_str) {
-        if n == 2 { // Why does 2 work here? :hmmm:
+        if n == 2 { // Why does 2 work here? BUT on mac 1 works instead. WTF?? must be \r\n vs \n
             // empty line, break
             break;
         }
