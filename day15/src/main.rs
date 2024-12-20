@@ -6,38 +6,32 @@ use std::path::Path;
 
 fn main() -> std::io::Result<()> {
     let f = File::open("input/day15.txt")?;
-    let mut reader = BufReader::new(f);
+    let reader = BufReader::new(f);
+    let mut lines = reader.lines();
+
     let mut map_str = String::new();
 
-    while let Ok(n) = reader.read_line(&mut map_str) {
-        if n == 2 { // Why does 2 work here? BUT on mac 1 works instead. WTF?? must be \r\n vs \n
-            // empty line, break
+    while let Some(Ok(n)) = lines.next() {
+        map_str += &format!("{}\n", &n);
+        if n.is_empty() {
             break;
         }
     }
 
     let mut map = Map::from_str(&map_str);
-    // map.display();
-    let mut buffer = String::new();
+    let mut moves = String::new();
 
     // Get the instructions
-    while let Ok(n) = reader.read_line(&mut buffer) {
-        if n == 0 {
-            // Done with the file
-            break;
-        }
+    while let Some(Ok(n)) = lines.next() {
+        moves += &n;
     }
 
-    for dir in buffer.chars() {
+    for dir in moves.chars() {
         if dir.is_whitespace() {
             continue;
         }
-        // map.display();
-        // println!();
-        // println!("Moving {dir}");
         map.move_robot(dir);
     }
-    // map.display();
 
     println!("Part1: {}", map.gps_sum());
 
@@ -45,17 +39,12 @@ fn main() -> std::io::Result<()> {
     // reset the map
     let mut map = Map::from_str(&map_str);
     map.part2ify();
-    // map.display();
-    for dir in buffer.chars() {
+    for dir in moves.chars() {
         if dir.is_whitespace() {
             continue;
         }
-        // map.display();
-        // println!();
-        // println!("Moving {dir}");
         map.move_robot(dir);
     }
-    // map.display();
 
     println!("Part2: {}", map.gps_sum());
 
@@ -68,7 +57,7 @@ struct Position {
     y: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 struct Map {
     robot: Position,
     boxes: HashSet<Position>,
@@ -292,14 +281,17 @@ impl Map {
     }
 }
 
+#[allow(dead_code)]
 fn run(path: impl AsRef<Path>, part2: bool) -> std::io::Result<i32> {
     let f = File::open(path)?;
-    let mut reader = BufReader::new(f);
+    let reader = BufReader::new(f);
+    let mut lines = reader.lines();
+
     let mut map_str = String::new();
 
-    while let Ok(n) = reader.read_line(&mut map_str) {
-        if n == 2 { // Why does 2 work here? :hmmm:
-            // empty line, break
+    while let Some(Ok(n)) = lines.next() {
+        map_str += &format!("{}\n", &n);
+        if n.is_empty() {
             break;
         }
     }
@@ -308,17 +300,15 @@ fn run(path: impl AsRef<Path>, part2: bool) -> std::io::Result<i32> {
     if part2 {
         map.part2ify();
     }
-    let mut buffer = String::new();
+    let mut moves = String::new();
 
     // Get the instructions
-    while let Ok(n) = reader.read_line(&mut buffer) {
-        if n == 0 {
-            // Done with the file
-            break;
-        }
+    while let Some(Ok(n)) = lines.next() {
+        moves += &n;
     }
 
-    for dir in buffer.chars() {
+
+    for dir in moves.chars() {
         if dir.is_whitespace() {
             continue;
         }
