@@ -3,15 +3,24 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, BufReader};
+use std::time::Instant;
+use itertools::Itertools;
 
 fn main() -> std::io::Result<()> {
     let mut maze = Maze::from_file("input/day20.txt")?;
-    maze.display();
 
-    let (shortest_nocheat, nocheat_path) = maze.shortest_nocheat();
-    println!("Shortest nocheat: {}", shortest_nocheat);
-    let part1 = maze.cheats_faster_than(100, &nocheat_path);
-    println!("Part1: {}", part1);
+    let start_pathfinding = Instant::now();
+    let _ = maze.shortest_nocheat();
+    let start_part1 = Instant::now();
+    let part1 = maze.cheats_faster_than(2, 100);
+    let start_part2 = Instant::now();
+    let part2 = maze.cheats_faster_than(20, 100);
+    let end = Instant::now();
+    println!("Pathfinding took: {:?}", start_part1.duration_since(start_pathfinding));
+    println!("Part1: {}, duration: {:?}", part1, start_part2.duration_since(start_part1));
+    println!("Part2: {}, duration: {:?}", part2, end.duration_since(start_part2)); // 38457 too low
+
+    // I could cache the results for part1 and use it for part2 and do it all in one pass
 
     Ok(())
 }
@@ -43,7 +52,6 @@ struct Next {
     loc: Position,
     cost: usize,
     cheated: Option<(Position, Position)>,
-    path: HashSet<Position>,
 }
 
 impl Eq for Next {}
@@ -75,7 +83,6 @@ struct Maze {
     visited: HashMap<Position, usize>,  // store minimum cost to get there with visited tiles
     start: Position,
     end: Position,
-    cheats: HashSet<(Position, Position)>,
 }
 
 impl Maze {
@@ -117,94 +124,52 @@ impl Maze {
             visited: HashMap::new(),
             start,
             end,
-            cheats: HashSet::new(),
         })
     }
 
-    fn cheats_faster_than(&mut self, faster_by: i32, nocheat_path: &HashMap<Position, usize>) -> usize {
-        self.visited.insert(self.start.clone(), 0);
-        let mut current = Next {
-            loc: self.visited.keys().nth(0).unwrap().clone(),
-            cost: 0,
-            cheated: None,
-            path: HashSet::new(),
-        };
-
-        let mut fringe = VecDeque::new();
-        fringe.push_back(current);
-
-        while !fringe.is_empty() {
-            current = fringe.pop_front().unwrap();
-            self.visited.insert(current.loc, current.cost);
-            // self.display();
-            // println!("At {:?}, steps: {}, visited: {:?}", current.loc, current.cost, &self.visited);
-
-            // if current.cost > 10 {
-            //     loop {}
-            // }
-
-            if let Some(&nocheat) = nocheat_path.get(&current.loc) {
-                if (nocheat as i32 - current.cost as i32) >= faster_by {
-                    // println!("Found cheat");
-                    self.cheats.insert((current.cheated.unwrap().0, current.cheated.unwrap().1));  // have to have cheated to beat a time
+    fn cheats_faster_than(&self, max_cheat_len: usize, faster_by: i32) -> usize {
+        let mut count = 0;
+        for combination in self.visited.keys().combinations(2) {
+            if let Some(savings) = self.cheatable(combination[0], combination[1], max_cheat_len) {
+                if savings as i32 >= faster_by {
+                    // println!("Cheat from {:?} to {:?} saves {}", combination[0], combination[1], savings);
+                    count += 1;
                 }
-            }
-
-
-            for neighbor in self.next_options(&current.loc) {
-                if current.path.contains(&neighbor) {
-                    continue;
-                }
-
-                let mut path = current.path.clone();
-                path.insert(neighbor);
-
-                fringe.push_back(Next {
-                    loc: neighbor,
-                    cost: current.cost + 1,
-                    cheated: current.cheated,
-                    path,
-                });
-            }
-
-            if current.cheated.is_some() {
-                // Already cheated, can't do it again
-                continue;
-            }
-
-            // If we can cheat, try it...
-            for (cheat_start, cheat_end) in self.next_options_cheat(&current.loc) {
-                if self.visited.contains_key(&cheat_end) {
-                    if *self.visited.get(&cheat_end).unwrap() > (current.cost + 2) {
-                        self.visited.entry(cheat_end).and_modify(|v| *v = current.cost + 2);  // cheating is for 2 steps
-                    }
-                }
-
-                let cheat = (cheat_start, cheat_end);
-                let mut path = current.path.clone();
-                path.insert(cheat_end);
-
-                fringe.push_back(Next {
-                    loc: cheat_end,
-                    cost: current.cost + 2,
-                    cheated: Some(cheat),
-                    path,
-                })
             }
         }
 
-        // dbg!(&self.cheats);
-
-        self.cheats.len()
+        count
     }
 
-    fn shortest_nocheat(&mut self) -> (usize, HashMap<Position, usize>) {
+    // Checks if two points have a valid cheat path between them. If so, returns Some of the time savings
+    // by doing so. Otherwise, returns none
+    fn cheatable(&self, start: &Position, end: &Position, max_cheat_len: usize) -> Option<usize> {
+        if !self.visited.contains_key(start) || !self.visited.contains_key(end) {
+            return None;
+        }
+
+        let distance = self.manhattan_distance(start, end);
+
+        if distance > max_cheat_len {
+            return None;
+        }
+
+        Some(self.visited.get(end).unwrap().abs_diff(*self.visited.get(start).unwrap()) - distance)
+    }
+
+    fn manhattan_distance(&self, start: &Position, end: &Position) -> usize {
+        if !self.is_valid(start) || !self.is_valid(end) {
+            panic!();
+        }
+        ((start.x - end.x).abs() + (start.y - end.y).abs()) as usize
+    }
+
+    fn shortest_nocheat(&mut self) -> usize {
         self.visited.insert(self.start.clone(), 0);
         let mut current = Next {
             loc: self.visited.keys().nth(0).unwrap().clone(),
             cost: 0,
             cheated: None,
-            path: HashSet::new(),
         };
 
         let mut fringe = VecDeque::new();
@@ -216,13 +181,8 @@ impl Maze {
             current = fringe.pop_front().unwrap();
             self.visited.insert(current.loc, current.cost);
 
-            if current.loc == self.end && current.cost <= shortest_nocheat {
-                if let Some((cheat_start, cheat_end)) = current.cheated {
-                    // Add to set of cheats
-                    self.cheats.insert((cheat_start, cheat_end));
-                } else if current.cost < shortest_nocheat {
-                    shortest_nocheat = current.cost;
-                }
+            if current.loc == self.end && current.cost < shortest_nocheat {
+                shortest_nocheat = current.cost;
             }
 
             for neighbor in self.next_options(&current.loc) {
@@ -234,18 +194,12 @@ impl Maze {
                     loc: neighbor,
                     cost: current.cost + 1,
                     cheated: current.cheated,
-                    path: HashSet::new(),
                 });
             }
 
         }
 
-        let path = self.visited.clone();
-        // Reset for another run
-        self.visited.clear();
-        self.cheats.clear();
-
-        (shortest_nocheat, path)
+        shortest_nocheat
 
     }
 
@@ -257,31 +211,6 @@ impl Maze {
             .into_iter().filter(|p| !self.is_wall(p))
             // .filter(|p| !self.visited.contains(p))  // Need to revisit to find all paths
             .collect::<Vec<Position>>()
-    }
-
-    // Returns next places available by cheating and the steps it took (either one or two steps)
-    // First two return values are cheat_start and cheat_end
-    fn next_options_cheat(&self, pos: &Position) -> Vec<(Position, Position)> {
-        let mut wall_neighbors = Vec::new();
-        if self.is_wall(&Position { x: pos.x + 1, y: pos.y }) {
-            wall_neighbors.push(Position { x: pos.x + 2, y: pos.y });
-        }
-        if self.is_wall(&Position { x: pos.x - 1, y: pos.y }) {
-            wall_neighbors.push(Position { x: pos.x - 2, y: pos.y });
-        }
-        if self.is_wall(&Position { x: pos.x, y: pos.y + 1 }) {
-            wall_neighbors.push(Position { x: pos.x, y: pos.y + 2 });
-        }
-        if self.is_wall(&Position { x: pos.x, y: pos.y - 1}) {
-            wall_neighbors.push(Position { x: pos.x, y: pos.y - 2 });
-        }
-
-        wall_neighbors.into_iter()
-            .filter(|p| self.is_valid(p))
-            .filter(|p| !self.is_wall(p))
-            .filter(|&end| !self.cheats.contains(&(*pos, end)))
-            .map(|end| (pos.clone(), end))
-            .collect::<Vec<_>>()
     }
 
     fn is_valid(&self, p: &Position) -> bool {
@@ -320,5 +249,28 @@ impl Maze {
             }
             println!();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() -> std::io::Result<()> {
+        let mut maze = Maze::from_file("../test_input/day20test.txt")?;
+        let _ = maze.shortest_nocheat();
+        assert_eq!(maze.cheats_faster_than(2, 1), 44);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_part2() -> std::io::Result<()> {
+        let mut maze = Maze::from_file("../test_input/day20test.txt")?;
+        let _ = maze.shortest_nocheat();
+        assert_eq!(maze.cheats_faster_than(20, 50), 285);
+
+        Ok(())
     }
 }
