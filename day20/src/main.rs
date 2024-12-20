@@ -8,9 +8,9 @@ fn main() -> std::io::Result<()> {
     let mut maze = Maze::from_file("input/day20.txt")?;
     maze.display();
 
-    let shortest_nocheat = maze.shortest_nocheat();
+    let (shortest_nocheat, nocheat_path) = maze.shortest_nocheat();
     println!("Shortest nocheat: {}", shortest_nocheat);
-    let part1 = maze.cheats_faster_than(shortest_nocheat - 100);
+    let part1 = maze.cheats_faster_than(100, &nocheat_path);
     println!("Part1: {}", part1);
 
     Ok(())
@@ -121,7 +121,7 @@ impl Maze {
         })
     }
 
-    fn cheats_faster_than(&mut self, shortest_nocheat: usize) -> usize {
+    fn cheats_faster_than(&mut self, faster_by: i32, nocheat_path: &HashMap<Position, usize>) -> usize {
         self.visited.insert(self.start.clone(), 0);
         let mut current = Next {
             loc: self.visited.keys().nth(0).unwrap().clone(),
@@ -143,16 +143,13 @@ impl Maze {
             //     loop {}
             // }
 
-            if current.loc == self.end {
-                if let Some((cheat_start, cheat_end)) = current.cheated {
-                    // println!("Found cheating solution: {:?}->{:?}, cost: {}", cheat_start, cheat_end, current.cost);
-                    // Add to set of cheats
-                    if current.cost <= shortest_nocheat {
-                        println!("Found cheat solution!");
-                        self.cheats.insert((cheat_start, cheat_end));
-                    }
+            if let Some(&nocheat) = nocheat_path.get(&current.loc) {
+                if (nocheat as i32 - current.cost as i32) >= faster_by {
+                    // println!("Found cheat");
+                    self.cheats.insert((current.cheated.unwrap().0, current.cheated.unwrap().1));  // have to have cheated to beat a time
                 }
             }
+
 
             for neighbor in self.next_options(&current.loc) {
                 if current.path.contains(&neighbor) {
@@ -201,7 +198,7 @@ impl Maze {
         self.cheats.len()
     }
 
-    fn shortest_nocheat(&mut self) -> usize {
+    fn shortest_nocheat(&mut self) -> (usize, HashMap<Position, usize>) {
         self.visited.insert(self.start.clone(), 0);
         let mut current = Next {
             loc: self.visited.keys().nth(0).unwrap().clone(),
@@ -243,12 +240,12 @@ impl Maze {
 
         }
 
-
+        let path = self.visited.clone();
         // Reset for another run
         self.visited.clear();
         self.cheats.clear();
 
-        shortest_nocheat
+        (shortest_nocheat, path)
 
     }
 
