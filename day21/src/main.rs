@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
-    let f = File::open("input/day21.txt")?;
+    let f = File::open("test_input/day21test.txt")?;
     let reader = BufReader::new(f);
     let lines = reader.lines();
 
@@ -24,7 +24,8 @@ fn main() -> std::io::Result<()> {
         }
         let num = code.split('A').take(1).map(|s| s.parse::<usize>().unwrap()).collect::<Vec<_>>();
         part1_sum += num[0] * result.len();
-        // println!("{}: {}, len: {}", code, result, result.len());
+        println!("{}: {}, len: {}", code, result, result.len());
+        println!("As: {}", result.chars().filter(|&c| c == 'A').count());
     }
 
     println!("Part1: {part1_sum}");
@@ -153,23 +154,23 @@ struct Next {
 
 struct NumericKeypadRobot {
     position: NumericKey,
-    robot: TClusterKeypadRobot1,
+    // robot: TClusterKeypadRobot1,
 }
 
-struct TClusterKeypadRobot1 {
-    position: TClusterKey,
-    robot: TClusterKeypadRobot2,
-}
-
-struct TClusterKeypadRobot2 {
-    position: TClusterKey,
-}
+// struct TClusterKeypadRobot1 {
+//     position: TClusterKey,
+//     robot: TClusterKeypadRobot2,
+// }
+//
+// struct TClusterKeypadRobot2 {
+//     position: TClusterKey,
+// }
 
 impl NumericKeypadRobot {
     fn new() -> Self {
         Self {
             position: NumericKey::A,
-            robot: TClusterKeypadRobot1::new(),
+            // robot: TClusterKeypadRobot1::new(),
         }
     }
 
@@ -180,7 +181,7 @@ impl NumericKeypadRobot {
             let mut temp = String::new();
             for key in path {
                 // println!("Keypad robot asks for {:?}", key);
-                temp.push_str(&self.robot.enter_direction(&key));
+                temp.push_str(&enter_direction(&TClusterKey::A, &key, 1));
             }
             if result.is_empty() || temp.len() < result.len() {
                 result = temp;
@@ -245,117 +246,170 @@ impl NumericKeypadRobot {
 
 }
 
-impl TClusterKeypadRobot1 {
-    fn new() -> Self {
-        Self {
-            position: TClusterKey::A,
-            robot: TClusterKeypadRobot2::new(),
-        }
-    }
+fn enter_direction(start: &TClusterKey, end: &TClusterKey, n_robots: usize) -> String {
+    let mut result = String::new();
 
-    fn enter_direction(&mut self, direction: &TClusterKey) -> String {
-        // println!("TClusterKeypadRobot1 wants {:?}", direction);
-        let mut result = String::new();
-        for key in self.moves_to_key(direction) {
-            // println!("TClusterKeypadRobot1 asks for {:?}", key);
-            result.push_str(&self.robot.enter_direction(&key));
-        }
-
-        self.position = direction.clone();
-
-        result
-    }
-
-    fn moves_to_key(&self, key: &TClusterKey) -> Vec<TClusterKey> {
-        // Always move right before up and down before left
-        let mut result = Vec::new();
-        let start = self.position.position();
-        let end = key.position();
-
-        let moving_up = start.1 > end.1;
-        let moving_left = start.0 > end.0;
-
-        if !moving_up {
-            for _ in 0..start.1.abs_diff(end.1) {
-                result.push(TClusterKey::Down);
-            }
-        }
-
-        if moving_left {
-            for _ in 0..start.0.abs_diff(end.0) {
-                result.push(TClusterKey::Left);
-            }
-        } else {
-            for _ in 0..start.0.abs_diff(end.0) {
-                result.push(TClusterKey::Right);
-            }
-        }
-
-        if moving_up {
-            for _ in 0..start.1.abs_diff(end.1) {
-                result.push(TClusterKey::Up);
-            }
-        }
-
-        result.push(TClusterKey::A);
-        result
-    }
-}
-
-impl TClusterKeypadRobot2 {
-    fn new() -> Self {
-        Self {
-            position: TClusterKey::A,
-        }
-    }
-
-    fn enter_direction(&mut self, direction: &TClusterKey) -> String {
-        // println!("TClusterKeypadRobot2 wants {:?}", direction);
-        let mut result = String::new();
-        for key in self.moves_to_key(direction) {
+    if n_robots == 0 {
+        for key in moves_to_key(start, end) {
             // println!("TClusterKeypadRobot2 asks for {:?}", key);
             result.push(key.to_char());
         }
-        self.position = direction.clone();
 
-        result
+        return result;
     }
 
-    // This function will probably be wrapped in a Trait or something because it's shared
-    fn moves_to_key(&self, key: &TClusterKey) -> Vec<TClusterKey> {
-        let mut result = Vec::new();
-        let start = self.position.position();
-        let end = key.position();
-
-        let moving_up = start.1 > end.1;
-        let moving_left = start.0 > end.0;
-
-        if !moving_up {
-            for _ in 0..start.1.abs_diff(end.1) {
-                result.push(TClusterKey::Down);
-            }
-        }
-
-        if moving_left {
-            for _ in 0..start.0.abs_diff(end.0) {
-                result.push(TClusterKey::Left);
-            }
-        } else {
-            for _ in 0..start.0.abs_diff(end.0) {
-                result.push(TClusterKey::Right);
-            }
-        }
-
-        if moving_up {
-            for _ in 0..start.1.abs_diff(end.1) {
-                result.push(TClusterKey::Up);
-            }
-        }
-
-        result.push(TClusterKey::A);
-        result
+    for key in moves_to_key(start, end) {
+        result.insert_str(0, &enter_direction(&key, &end, n_robots - 1));
     }
+
+    result
 }
+
+fn moves_to_key(start: &TClusterKey, key: &TClusterKey) -> Vec<TClusterKey> {
+    let mut result = Vec::new();
+    let start = start.position();
+    let end = key.position();
+
+    let moving_up = start.1 > end.1;
+    let moving_left = start.0 > end.0;
+
+    if !moving_up {
+        for _ in 0..start.1.abs_diff(end.1) {
+            result.push(TClusterKey::Down);
+        }
+    }
+
+    if moving_left {
+        for _ in 0..start.0.abs_diff(end.0) {
+            result.push(TClusterKey::Left);
+        }
+    } else {
+        for _ in 0..start.0.abs_diff(end.0) {
+            result.push(TClusterKey::Right);
+        }
+    }
+
+    if moving_up {
+        for _ in 0..start.1.abs_diff(end.1) {
+            result.push(TClusterKey::Up);
+        }
+    }
+
+    result.push(TClusterKey::A);
+    result
+}
+
+// impl TClusterKeypadRobot1 {
+//     fn new() -> Self {
+//         Self {
+//             position: TClusterKey::A,
+//             robot: TClusterKeypadRobot2::new(),
+//         }
+//     }
+//
+//     fn enter_direction(&mut self, direction: &TClusterKey) -> String {
+//         // println!("TClusterKeypadRobot1 wants {:?}", direction);
+//         let mut result = String::new();
+//         for key in self.moves_to_key(direction) {
+//             // println!("TClusterKeypadRobot1 asks for {:?}", key);
+//             result.push_str(&self.robot.enter_direction(&key));
+//         }
+//
+//         self.position = direction.clone();
+//
+//         result
+//     }
+//
+//     fn moves_to_key(&self, key: &TClusterKey) -> Vec<TClusterKey> {
+//         // Always move right before up and down before left
+//         let mut result = Vec::new();
+//         let start = self.position.position();
+//         let end = key.position();
+//
+//         let moving_up = start.1 > end.1;
+//         let moving_left = start.0 > end.0;
+//
+//         if !moving_up {
+//             for _ in 0..start.1.abs_diff(end.1) {
+//                 result.push(TClusterKey::Down);
+//             }
+//         }
+//
+//         if moving_left {
+//             for _ in 0..start.0.abs_diff(end.0) {
+//                 result.push(TClusterKey::Left);
+//             }
+//         } else {
+//             for _ in 0..start.0.abs_diff(end.0) {
+//                 result.push(TClusterKey::Right);
+//             }
+//         }
+//
+//         if moving_up {
+//             for _ in 0..start.1.abs_diff(end.1) {
+//                 result.push(TClusterKey::Up);
+//             }
+//         }
+//
+//         result.push(TClusterKey::A);
+//         result
+//     }
+// }
+//
+// impl TClusterKeypadRobot2 {
+//     fn new() -> Self {
+//         Self {
+//             position: TClusterKey::A,
+//         }
+//     }
+//
+//     fn enter_direction(&mut self, direction: &TClusterKey) -> String {
+//         // println!("TClusterKeypadRobot2 wants {:?}", direction);
+//         let mut result = String::new();
+//         for key in self.moves_to_key(direction) {
+//             // println!("TClusterKeypadRobot2 asks for {:?}", key);
+//             result.push(key.to_char());
+//         }
+//         self.position = direction.clone();
+//
+//         result
+//     }
+//
+//     // This function will probably be wrapped in a Trait or something because it's shared
+//     fn moves_to_key(&self, key: &TClusterKey) -> Vec<TClusterKey> {
+//         let mut result = Vec::new();
+//         let start = self.position.position();
+//         let end = key.position();
+//
+//         let moving_up = start.1 > end.1;
+//         let moving_left = start.0 > end.0;
+//
+//         if !moving_up {
+//             for _ in 0..start.1.abs_diff(end.1) {
+//                 result.push(TClusterKey::Down);
+//             }
+//         }
+//
+//         if moving_left {
+//             for _ in 0..start.0.abs_diff(end.0) {
+//                 result.push(TClusterKey::Left);
+//             }
+//         } else {
+//             for _ in 0..start.0.abs_diff(end.0) {
+//                 result.push(TClusterKey::Right);
+//             }
+//         }
+//
+//         if moving_up {
+//             for _ in 0..start.1.abs_diff(end.1) {
+//                 result.push(TClusterKey::Up);
+//             }
+//         }
+//
+//         result.push(TClusterKey::A);
+//         result
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
