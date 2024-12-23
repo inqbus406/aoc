@@ -7,6 +7,7 @@ fn main() -> std::io::Result<()> {
     let lines = reader.lines();
 
     let mut sum = 0;
+    let mut monkeys = Vec::new();
 
     for line in lines {
         let Ok(monkey) = line else {
@@ -17,12 +18,18 @@ fn main() -> std::io::Result<()> {
         }
 
         let monkey = monkey.parse::<u64>().unwrap();
+        monkeys.push(monkey);
         sum += iterations(monkey, 2000);
     }
 
     println!("Part1: {sum}");
+    println!("Part2: {}", part2(&monkeys));
 
     Ok(())
+}
+
+fn part2(monkeys: &Vec<u64>) -> u64 {
+    todo!()
 }
 
 fn iterations(number: u64, n: usize) -> u64 {
